@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Page</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f9f9f9;
+            font-family: 'Poppins', sans-serif; /* Modern font */
+        }
+        .login-form {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 350px;
+            text-align: center;
+        }
+        .login-form h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .login-form label {
+            display: block;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        .login-form input[type="text"],
+        .login-form input[type="password"] {
+            width: 92%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: 'Poppins', sans-serif; /* Use the same modern font */
+        }
+        .login-form input[type="submit"] {
+            width: 100%;
+            padding: 12px;
+            background-color: #ff6347;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-weight: 600;
+        }
+        .login-form input[type="submit"]:hover {
+            background-color: #e74c3c;
+        }
+        .signup-link {
+            font-size: 14px;
+            color: #007bff;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-form">
+        <h1>Welcome Back! Please Log In.</h1>
+        <form action="/login" method="post">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required>
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+            <input type="submit" value="Login">
+        </form>
+        <p>Don't have an account yet? <a class="signup-link" href="/signup">Sign up here!</a></p>
+    </div>
+</body>
+</html>
