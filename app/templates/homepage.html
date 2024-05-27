@@ -56,7 +56,16 @@
         <input type="text" id="filterInput" placeholder="Search for food here">
     </div>
     </div>
-    <a href="{{url_for('main.profile')}}"><img style="margin-right: 30px;" src = "{{url_for('static', filename = 'profile.png')}}"></a>
+    <img style="margin-right: 30px;" src = "{{url_for('static', filename = 'profile.png')}}">
 </div>
 </body>
 </html>
+<!-- Add this section below your existing code -->
+<div class="restaurant-card">
+    <h2>Delicious Bites</h2>
+    <p>Cuisine: Italian</p>
+    <p>Rating: ⭐⭐⭐⭐</p>
+    <p>Description: Enjoy authentic pasta and wood-fired pizzas in a cozy ambiance.</p>
+    <img src="restaurant-image.jpg" alt="Delicious Bites Restaurant">
+    <!-- Add more restaurant cards as needed -->
+</div>
