@@ -14,6 +14,14 @@
             background-color: #f9f9f9;
             font-family: 'Poppins', sans-serif; /* Modern font */
         }
+        .logo h1 {
+            position: absolute;
+            top: 0;
+            left: 0;
+            padding: 20px;
+            font-size: 24px;
+            font-weight: bold;
+        }
         .signup-form {
             background-color: #ffffff;
             padding: 30px;
@@ -57,9 +65,17 @@
         .signup-form input[type="submit"]:hover {
             background-color: #009b77;
         }
+        .login-link {
+            font-size: 14px;
+            color: #007bff;
+            text-decoration: none;
+        }
     </style>
 </head>
 <body>
+    <div class="logo">
+        <h1>SavorSense</h1>
+    </div>
     <div class="signup-form">
         <h1>Join the SavorSense Community!</h1>
         <form action="/signup" method="post">
@@ -71,6 +87,7 @@
             <input type="password" id="password" name="password" required>
             <input type="submit" value="Sign Up">
         </form>
+        <p>Already have an account? <a class="signup-link" href="/login">Log in here!</a></p>
     </div>
 </body>
 </html>
