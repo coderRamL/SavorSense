@@ -46,26 +46,113 @@
         .header h1 {
             margin: 0;
         }
+
+        /* Restaurant Card Styling */
+        .restaurant-card {
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin: 20px;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .restaurant-card h2 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .restaurant-card p {
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .restaurant-card img {
+            max-width: 100%;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+
+        /* Symmetrical layout for multiple cards */
+        .restaurant-card-row {
+            display: flex;
+            justify-content: space-between;
+        }
     </style>
 </head>
 <body>
     <div class="header">
-    <h1>SavorSense</h1>
-    <div class="filter-bar-container">
-    <div class="filter-bar">
-        <input type="text" id="filterInput" placeholder="Search for food here">
+        <h1>SavorSense</h1>
+        <div class="filter-bar-container">
+            <div class="filter-bar">
+                <input type="text" id="filterInput" placeholder="Search for food here">
+            </div>
+        </div>
+        <a href="{{url_for('main.profile')}}"><img style="margin-right: 30px;" src="{{url_for('static', filename='profile.png')}}"></a>
     </div>
+
+    <!-- Restaurant Cards -->
+    <div class="restaurant-card-container">
+        <div class="restaurant-card-row">
+            <!-- Card 1 -->
+            <div class="restaurant-card">
+                <h2>Delicious Bites</h2>
+                <p>Cuisine: Italian</p>
+                <p>Rating: ⭐⭐⭐⭐</p>
+                <p>Description: Enjoy authentic pasta and wood-fired pizzas in a cozy ambiance.</p>
+                <img src="restaurant-image.jpg" alt="Delicious Bites Restaurant">
+            </div>
+
+            <!-- Card 2 -->
+            <div class="restaurant-card">
+                <h2>Spice Haven</h2>
+                <p>Cuisine: Indian</p>
+                <p>Rating: ⭐⭐⭐⭐</p>
+                <p>Description: Savor aromatic curries and tandoori delights in a vibrant setting.</p>
+                <img src="spice-haven-image.jpg" alt="Spice Haven Restaurant">
+            </div>
+
+            <!-- Card 3 -->
+            <div class="restaurant-card">
+                <h2>Sweet Treats</h2>
+                <p>Cuisine: Desserts</p>
+                <p>Rating: ⭐⭐⭐⭐⭐</p>
+                <p>Description: Indulge in heavenly pastries, cakes, and gelato at our cozy patisserie.</p>
+                <img src="sweet-treats-image.jpg" alt="Sweet Treats Patisserie">
+            </div>
+        </div>
+        
+        <div class="restaurant-card-row">
+            <!-- Card 4 -->
+            <div class="restaurant-card">
+                <h2>Seafood Delight</h2>
+                <p>Cuisine: Seafood</p>
+                <p>Rating: ⭐⭐⭐⭐</p>
+                <p>Description: Dive into fresh seafood dishes by the waterfront.</p>
+                <img src="seafood-delight-image.jpg" alt="Seafood Delight Restaurant">
+            </div>
+
+            <!-- Card 5 -->
+            <div class="restaurant-card">
+                <h2>Green Garden</h2>
+                <p>Cuisine: Vegetarian</p>
+                <p>Rating: ⭐⭐⭐⭐</p>
+                <p>Description: Explore a garden-inspired menu with wholesome vegetarian options.</p>
+                <img src="green-garden-image.jpg" alt="Green Garden Restaurant">
+            </div>
+
+            <!-- Card 6 -->
+            <div class="restaurant-card">
+                <h2>ChocoBliss</h2>
+                <p>Cuisine: Desserts</p>
+                <p>Rating: ⭐⭐⭐⭐⭐</p>
+                <p>Description: Satisfy your sweet tooth with decadent chocolate creations.</p>
+                <img src="chocobliss-image.jpg" alt="ChocoBliss Patisserie">
+            </div>
+        </div>
     </div>
-    <a href="{{url_for('main.profile')}}"><img style="margin-right: 30px;" src = "{{url_for('static', filename = 'profile.png')}}"></a>
-</div>
 </body>
 </html>
-<!-- Add this section below your existing code -->
-<div class="restaurant-card">
-    <h2>Delicious Bites</h2>
-    <p>Cuisine: Italian</p>
-    <p>Rating: ⭐⭐⭐⭐</p>
-    <p>Description: Enjoy authentic pasta and wood-fired pizzas in a cozy ambiance.</p>
-    <img src="restaurant-image.jpg" alt="Delicious Bites Restaurant">
-    <!-- Add more restaurant cards as needed -->
-</div>
