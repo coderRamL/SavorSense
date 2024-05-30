@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Food Recommendation Chatbot</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -110,6 +112,12 @@
         .dropdown-content.show {
             display: block;
         }
+
+        #map {
+            height: 500px;
+            width: 100%;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -120,6 +128,7 @@
                 <input type="text" id="filterInput" placeholder="Search for food here">
             </div>
         </div>
+        <button id="toggle-map" style="position: relative; left: -50px; width: 150px; height: 50px; background-color: #E65E43;">Show Map</button>
         <div class="dropdown">
             <a href="javascript:void(0);" onclick="toggleDropdown()">
                 <img style="margin-right: 30px;" src="{{ url_for('static', filename='profile.png') }}" alt="Profile">
@@ -133,6 +142,7 @@
         
     </div>
 
+    <div id="map"></div>
     <!-- Restaurant Cards -->
     <div class="restaurant-card-container">
         <div class="restaurant-card-row">
@@ -211,6 +221,49 @@
                 }
             }
         }
+
+        let mapVisible = false;
+        let map;
+
+        function showMap() {
+            var mapContainer = document.getElementById('map');
+
+            if (mapVisible) {
+                mapContainer.style.display = 'none'; // Hide the map container
+                document.getElementById('toggle-map').textContent = 'Show Map';
+            } else {
+                mapContainer.style.display = 'block'; // Show the map container
+                document.getElementById('toggle-map').textContent = 'Hide Map';
+
+            
+            // Initialize the map if it hasn't been initialized yet
+            if (!map) {
+                map = L.map('map').setView([51.505, -0.09], 13);
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                }).addTo(map);
+
+                // Add markers at specific locations
+                var markers = [
+                    {lat: 51.5, lng: -0.09, popup: 'Marker 1'},
+                    {lat: 51.51, lng: -0.1, popup: 'Marker 2'},
+                    {lat: 51.49, lng: -0.08, popup: 'Marker 3'}
+                ];
+
+                markers.forEach(function(marker) {
+                    L.marker([marker.lat, marker.lng])
+                        .addTo(map)
+                        .bindPopup(marker.popup);
+                });
+            } else {
+                map.invalidateSize();
+            }
+        }
+        mapVisible = !mapVisible;
+        console.log('map visible: ', mapVisible);
+        }
+        document.getElementById('toggle-map').addEventListener('click', showMap);
     </script>
 
 </body>
