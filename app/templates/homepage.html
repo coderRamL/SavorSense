@@ -76,10 +76,39 @@
             margin-top: 10px;
         }
 
-        /* Symmetrical layout for multiple cards */
         .restaurant-card-row {
             display: flex;
             justify-content: space-between;
+        }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            left: -70px;
+            background-color: #f9f9f9;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+
+        .dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+
+        .dropdown-content a:hover {
+            background-color: #f1f1f1;
+        }
+
+        .dropdown-content.show {
+            display: block;
         }
     </style>
 </head>
@@ -91,7 +120,17 @@
                 <input type="text" id="filterInput" placeholder="Search for food here">
             </div>
         </div>
-        <a href="{{url_for('main.profile')}}"><img style="margin-right: 30px;" src="{{url_for('static', filename='profile.png')}}"></a>
+        <div class="dropdown">
+            <a href="javascript:void(0);" onclick="toggleDropdown()">
+                <img style="margin-right: 30px;" src="{{ url_for('static', filename='profile.png') }}" alt="Profile">
+            </a>
+            <div id="dropdown-content" class="dropdown-content">
+                <a href="{{ url_for('main.profile') }}">Profile</a>
+                <a href="{{ url_for('main.signup') }}">Signup</a>
+                <a href="{{ url_for('main.login') }}">Login</a>
+            </div>
+        </div>
+        
     </div>
 
     <!-- Restaurant Cards -->
@@ -154,5 +193,25 @@
             </div>
         </div>
     </div>
+
+    <script>
+        function toggleDropdown() {
+            document.getElementById("dropdown-content").classList.toggle("show");
+        }
+    
+        // Close the dropdown if the user clicks outside of it
+        window.onclick = function(event) {
+            if (!event.target.matches('.dropdown img')) {
+                var dropdowns = document.getElementsByClassName("dropdown-content");
+                for (var i = 0; i < dropdowns.length; i++) {
+                    var openDropdown = dropdowns[i];
+                    if (openDropdown.classList.contains('show')) {
+                        openDropdown.classList.remove('show');
+                    }
+                }
+            }
+        }
+    </script>
+
 </body>
 </html>
