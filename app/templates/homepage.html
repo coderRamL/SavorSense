@@ -83,6 +83,10 @@
             justify-content: space-between;
         }
 
+        .restaurant-card:hover {
+            background-color: #f0f0f0;
+        }
+
         .dropdown {
             position: relative;
             display: inline-block;
@@ -203,14 +207,22 @@
             </div>
         </div>
         <div class="restaurant-card-row">
-            <div class="restaurant-card">
+            <div class="restaurant-card" onclick="redirect('{{ res[i][22] }}')">
                 <h2>{{res[i][1]}}</h2>
                 <p>Cuisine: {{res[i][2]}}</p>
+                <p>Price: ${{res[i][26]}}-{{res[i][27]}}</p>
                 <p>Rating:{{res[i][3]}} ⭐⭐⭐⭐({{res[i][4]}}) </p>
                 <p>Description: {{res[i][5]}}</p>
+                <img style="width: 100px; height: 100px;" src="{{url_for('static', filename=res[i][21])}}">
             </div>
         </div>
     </div>
+
+    <script>
+        function redirect(url) {
+            window.location.href = url;
+        }
+    </script>
 
     <script>
         function toggleDropdown() {
@@ -256,14 +268,26 @@
                 var markers = [
                     {lat: 51.5, lng: -0.09, popup: 'Marker 1'},
                     {lat: 51.51, lng: -0.1, popup: 'Marker 2'},
-                    {lat: 51.49, lng: -0.08, popup: 'Marker 3'}
+                    {lat: 51.49, lng: -0.08, popup: 'Marker 3'}, 
+        
                 ];
-
+                
                 markers.forEach(function(marker) {
                     L.marker([marker.lat, marker.lng])
                         .addTo(map)
                         .bindPopup(marker.popup);
                 });
+
+                // var restaurantData = JSON.parse(document.getElementById('restaurant-data').textContent);
+                // restaurantData.forEach(function(restaurant) {
+                //         var lat = restaurant[24];  
+                //         var lng = restaurant[25];  
+                //         var name = restaurant[1];  
+                //         L.marker([lat, lng])
+                //             .addTo(map)
+                //             .bindPopup(name);
+                //     });
+
             } else {
                 map.invalidateSize();
             }

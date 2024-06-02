@@ -14,6 +14,8 @@ def homepage():
         with engine.connect() as connection:
             result = connection.execute(restaurants_table.select())
             restaurants = result.fetchall()
+
+        # restaurant_data = [dict(row) for row in restaurants]
         length = len(restaurants)
         print(length)
         i = 0
