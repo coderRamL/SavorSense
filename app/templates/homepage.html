@@ -207,14 +207,16 @@
             </div>
         </div>
         <div class="restaurant-card-row">
+            {% for i in range(len) %}
             <div class="restaurant-card" onclick="redirect('{{ res[i][22] }}')">
                 <h2>{{res[i][1]}}</h2>
                 <p>Cuisine: {{res[i][2]}}</p>
                 <p>Price: ${{res[i][26]}}-{{res[i][27]}}</p>
-                <p>Rating:{{res[i][3]}} ⭐⭐⭐⭐({{res[i][4]}}) </p>
+                <p>Rating: {{res[i][3]}} ⭐⭐⭐⭐({{res[i][4]}}) </p>
                 <p>Description: {{res[i][5]}}</p>
                 <img style="width: 100px; height: 100px;" src="{{url_for('static', filename=res[i][21])}}">
             </div>
+            {% endfor %}
         </div>
     </div>
 
@@ -258,7 +260,7 @@
             
             // Initialize the map if it hasn't been initialized yet
             if (!map) {
-                map = L.map('map').setView([51.505, -0.09], 13);
+                map = L.map('map').setView([40.25, -74.69], 13);
 
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -278,15 +280,18 @@
                         .bindPopup(marker.popup);
                 });
 
-                // var restaurantData = JSON.parse(document.getElementById('restaurant-data').textContent);
-                // restaurantData.forEach(function(restaurant) {
-                //         var lat = restaurant[24];  
-                //         var lng = restaurant[25];  
-                //         var name = restaurant[1];  
-                //         L.marker([lat, lng])
-                //             .addTo(map)
-                //             .bindPopup(name);
-                //     });
+                var restaurantData = JSON.parse('{{restaurant | tojson | safe }}');
+                restaurantData.forEach(function(restaurants) {
+                    var lat = restaurants['lat'];  
+                    var lng = restaurants['lng'];  
+                    var name = restaurants['name']; 
+                    var rating = restaurants['rating']
+                    var address = restaurants['address']
+                    var content = `<b>${name}</b><br>Rating: ${rating}<br>Address: ${address}`;
+                    L.marker([lat, lng])
+                            .addTo(map)
+                            .bindPopup(content);
+                });
 
             } else {
                 map.invalidateSize();
