@@ -77,7 +77,7 @@
     </div>
     <div class="login-form">
         <h1>Welcome Back! Please Log In.</h1>
-        <form action="/login" method="post">
+        <form action="{{url_for('main.homepage')}}" method="post">
             <label for="username">Username:</label>
             <input type="text" id="username" name="username" required>
             <label for="password">Password:</label>

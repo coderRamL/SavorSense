@@ -1,8 +1,10 @@
-from flask import Blueprint, render_template, request, redirect, url_for
+from flask import Blueprint, render_template, request, redirect, url_for, session
 from sqlalchemy import create_engine, Column, Integer, String, Table, MetaData
 from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime
 from datetime import time
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 
 main = Blueprint('main', __name__)
 
@@ -17,7 +19,7 @@ def serialize_row(row):
             serialized_row[key] = value
     return serialized_row
 
-@main.route('/')
+@main.route('/', methods=['GET', 'POST'])
 def homepage():
     try: 
         engine = create_engine("postgresql://SavorSense_owner:iX2EMY6TzLlf@ep-shrill-cloud-a40et0x7.us-east-1.aws.neon.tech/SavorSense?sslmode=require")
@@ -67,7 +69,7 @@ def success():
                 connection.execute(users_table.insert().values(name=name, username=username, email=email, password=password))
                 connection.commit()
 
-                # Redirect to a success page or login page
+                # Redirect to a success page
                 return redirect(url_for('main.success'))
 
         # Render the signup page (GET request)
@@ -78,8 +80,33 @@ def success():
 
     return render_template('successpage.html')
 
-@main.route('/login')
+@main.route('/login', methods=['GET', 'POST'])
 def login():
+    # Create an SQLAlchemy engine (replace with your actual database URL)
+    db_url = "postgresql://SavorSense_owner:iX2EMY6TzLlf@ep-shrill-cloud-a40et0x7.us-east-1.aws.neon.tech/SavorSense?sslmode=require"
+    engine = create_engine(db_url)
+    
+    # Define User model (similar to the previous example)
+    Base = declarative_base()
+    
+    class User(Base):
+        __tablename__ = 'Users'
+        username = Column(String, primary_key=True)
+        password = Column(String)
+
+    # Authenticate user
+    def authenticate_user(username, password):
+        Session = sessionmaker(bind=engine)
+        session = Session()
+    
+        if request.method == 'POST':
+            entered_username = request.form.get('username')
+            entered_password = request.form.get('password')
+            if authenticate_user(entered_username, entered_password):
+                # Redirect to the profile or homepage route
+                return redirect(url_for('profile'))
+            else:
+                return "Invalid credentials. Please try again."
     return render_template('login.html')
 
 @main.route('/profile')
