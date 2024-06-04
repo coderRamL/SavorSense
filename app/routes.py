@@ -33,7 +33,7 @@ def homepage():
         length = len(restaurants)
         print(length)
         i = 0
-        return render_template('homepage.html', res = restaurants, restaurant=restaurant_data, len = length, i = i)
+        return render_template('homepage.html', res = restaurants, restaurant=restaurant_data, len = length, i = i, min = min)
     except SQLAlchemyError as e:
         print(f"An error occurred: {e}")
 @main.route('/signup', methods=['GET', 'POST'])

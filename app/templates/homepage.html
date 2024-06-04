@@ -87,6 +87,10 @@
             background-color: #f0f0f0;
         }
 
+        .restaurant-card.hidden {
+            display: none;
+        }
+
         .dropdown {
             position: relative;
             display: inline-block;
@@ -148,77 +152,42 @@
 
     <div id="map"></div>
     <!-- Restaurant Cards -->
-    <div class="restaurant-card-container">
-        <div class="restaurant-card-row">
-            <!-- Card 1 -->
-            <div class="restaurant-card">
-                <h2>Delicious Bites</h2>
-                <p>Cuisine: Italian</p>
-                <p>Rating: ⭐⭐⭐⭐</p>
-                <p>Description: Enjoy authentic pasta and wood-fired pizzas in a cozy ambiance.</p>
-                <img src="restaurant-image.jpg" alt="Delicious Bites Restaurant">
-            </div>
-
-            <!-- Card 2 -->
-            <div class="restaurant-card">
-                <h2>Spice Haven</h2>
-                <p>Cuisine: Indian</p>
-                <p>Rating: ⭐⭐⭐⭐</p>
-                <p>Description: Savor aromatic curries and tandoori delights in a vibrant setting.</p>
-                <img src="spice-haven-image.jpg" alt="Spice Haven Restaurant">
-            </div>
-
-            <!-- Card 3 -->
-            <div class="restaurant-card">
-                <h2>Sweet Treats</h2>
-                <p>Cuisine: Desserts</p>
-                <p>Rating: ⭐⭐⭐⭐⭐</p>
-                <p>Description: Indulge in heavenly pastries, cakes, and gelato at our cozy patisserie.</p>
-                <img src="sweet-treats-image.jpg" alt="Sweet Treats Patisserie">
-            </div>
-        </div>
-        
-        <div class="restaurant-card-row">
-            <!-- Card 4 -->
-            <div class="restaurant-card">
-                <h2>Seafood Delight</h2>
-                <p>Cuisine: Seafood</p>
-                <p>Rating: ⭐⭐⭐⭐</p>
-                <p>Description: Dive into fresh seafood dishes by the waterfront.</p>
-                <img src="seafood-delight-image.jpg" alt="Seafood Delight Restaurant">
-            </div>
-
-            <!-- Card 5 -->
-            <div class="restaurant-card">
-                <h2>Green Garden</h2>
-                <p>Cuisine: Vegetarian</p>
-                <p>Rating: ⭐⭐⭐⭐</p>
-                <p>Description: Explore a garden-inspired menu with wholesome vegetarian options.</p>
-                <img src="green-garden-image.jpg" alt="Green Garden Restaurant">
-            </div>
-
-            <!-- Card 6 -->
-            <div class="restaurant-card">
-                <h2>ChocoBliss</h2>
-                <p>Cuisine: Desserts</p>
-                <p>Rating: ⭐⭐⭐⭐⭐</p>
-                <p>Description: Satisfy your sweet tooth with decadent chocolate creations.</p>
-                <img src="chocobliss-image.jpg" alt="ChocoBliss Patisserie">
-            </div>
-        </div>
-        <div class="restaurant-card-row">
-            {% for i in range(len) %}
-            <div class="restaurant-card" onclick="redirect('{{ res[i][22] }}')">
-                <h2>{{res[i][1]}}</h2>
-                <p>Cuisine: {{res[i][2]}}</p>
-                <p>Price: ${{res[i][26]}}-{{res[i][27]}}</p>
-                <p>Rating: {{res[i][3]}} ⭐⭐⭐⭐({{res[i][4]}}) </p>
-                <p>Description: {{res[i][5]}}</p>
-                <img style="width: 100px; height: 100px;" src="{{url_for('static', filename=res[i][21])}}">
+    <div id="restaurant-card-container" class="restaurant-card-container">
+        {% for i in range(0, len, 3) %}
+        <div class="restaurant-card-row" id="row-{{i // 3}}">
+            {% for j in range(i, min(i + 3, len)) %}
+            <div class="restaurant-card" data-name="{{res[j][1]}}" data-cuisine="{{res[j][2]}}" data-rating="{{res[j][3]}}" data-description="{{res[j][5]}}" onclick="redirect('{{ res[j][22] }}')">
+                <h2 class="restaurant-name">{{res[j][1]}}</h2>
+                <p class="restaurant-cuisine">Cuisine: {{res[j][2]}}</p>
+                <p>Price: ${{res[j][26]}}-{{res[j][27]}}</p>
+                <p class="restaurant-rating">Rating: {{res[j][3]}} ⭐⭐⭐⭐({{res[j][4]}}) </p>
+                <p class="restaurant-description">Description: {{res[j][5]}}</p>
+                <img style="width: 100px; height: 100px;" src="{{url_for('static', filename=res[j][21])}}">
             </div>
             {% endfor %}
         </div>
+        {% endfor %}
     </div>
+
+    <script>
+        document.getElementById('filterInput').addEventListener('input', function() {
+            var filterVal = this.value.toLowerCase();
+            var cards = document.getElementsByClassName('restaurant-card');
+            for (var i = 0; i < cards.length; i++) {
+                var card = cards[i];
+                var name = card.getAttribute('data-name').toLowerCase();
+                var cuisine = card.getAttribute('data-cuisine').toLowerCase();
+                var rating = card.getAttribute('data-rating').toLowerCase();
+                var description = card.getAttribute('data-description').toLowerCase();
+                if (name.includes(filterVal) || cuisine.includes(filterVal) || rating.includes(filterVal) || description.includes(filterVal)) {
+                    card.classList.remove('hidden');
+                }
+                else {
+                    card.classList.add('hidden');
+                }
+            }
+        });
+    </script>
 
     <script>
         function redirect(url) {
