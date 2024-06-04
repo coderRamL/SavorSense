@@ -96,9 +96,9 @@
     </div>
     <div class="signup-form">
         <h1>Join the SavorSense Community!</h1>
-        <form action="/signup" method="post">
-            <label for="fullname">Full Name:</label>
-            <input type="text" id="fullname" name="fullname" required minlength="2">
+        <form action="{{url_for('main.success')}}" method="post">
+            <label for="name">Full Name:</label>
+            <input type="text" id="name" name="name" required minlength="2">
             <!-- Add minlength attribute for a minimum of 2 characters -->
             
             <label for="username">Username:</label>
