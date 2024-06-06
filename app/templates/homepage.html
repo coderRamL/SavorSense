@@ -156,18 +156,55 @@
         {% for i in range(0, len, 3) %}
         <div class="restaurant-card-row" id="row-{{i // 3}}">
             {% for j in range(i, min(i + 3, len)) %}
-            <div class="restaurant-card" data-name="{{res[j][1]}}" data-cuisine="{{res[j][2]}}" data-rating="{{res[j][3]}}" data-description="{{res[j][5]}}" onclick="redirect('{{ res[j][22] }}')">
+            <div class="restaurant-card" data-name="{{res[j][1]}}" data-cuisine="{{res[j][2]}}" data-rating="{{res[j][3]}}" data-description="{{res[j][5]}}" data-monday-start="{{ time[j]['start_hour_monday'] }}"
+            data-monday-end="{{ time[j]['end_hour_monday'] }}"
+            data-tuesday-start="{{ time[j]['start_hour_tues'] }}"
+            data-tuesday-end="{{ time[j]['end_hour_tues'] }}"
+            data-wednesday-start="{{ time[j]['start_hour_wed'] }}"
+            data-wednesday-end="{{ time[j]['end_hour_wed'] }}"
+            data-thursday-start="{{ time[j]['start_hour_thurs'] }}"
+            data-thursday-end="{{ time[j]['end_hour_thurs'] }}"
+            data-friday-start="{{ time[j]['start_hour_fri'] }}"
+            data-friday-end="{{ time[j]['end_hour_fri'] }}"
+            data-saturday-start="{{ time[j]['start_hour_sat'] }}"
+            data-saturday-end="{{ time[j]['end_hour_sat'] }}"
+            data-sunday-start="{{ time[j]['start_hour_sun'] }}"
+            data-sunday-end="{{ time[j]['end_hour_sun'] }}" onclick="redirect('{{ res[j][22] }}')">
                 <h2 class="restaurant-name">{{res[j][1]}}</h2>
                 <p class="restaurant-cuisine">Cuisine: {{res[j][2]}}</p>
                 <p>Price: ${{res[j][26]}}-{{res[j][27]}}</p>
                 <p class="restaurant-rating">Rating: {{res[j][3]}} ⭐⭐⭐⭐({{res[j][4]}}) </p>
                 <p class="restaurant-description">Description: {{res[j][5]}}</p>
+                <p class="restaurant-timings">Today's Hours: <span class="timing-value"></span></p>
                 <img style="width: 100px; height: 100px;" src="{{url_for('static', filename=res[j][21])}}">
             </div>
             {% endfor %}
         </div>
         {% endfor %}
     </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+    
+        const daysOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+        const currentDay = daysOfWeek[new Date().getDay()];
+
+
+        const restaurantCards = document.querySelectorAll('.restaurant-card');
+
+        restaurantCards.forEach(card => {
+        
+            const startTime = card.getAttribute(`data-${currentDay}-start`);
+            const endTime = card.getAttribute(`data-${currentDay}-end`);
+
+        
+            const timeValue = card.querySelector('.timing-value');
+            if (timeValue) {
+                timeValue.textContent = startTime === 'Closed' ? 'Closed' : `${startTime} - ${endTime}`;
+            }
+        });
+});
+    </script>
 
     <script>
         document.getElementById('filterInput').addEventListener('input', function() {

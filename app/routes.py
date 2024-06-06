@@ -19,6 +19,15 @@ def serialize_row(row):
             serialized_row[key] = value
     return serialized_row
 
+def convert_to_12hr(time_obj):
+    if time_obj is None or time_obj == "NULL":
+        return "Closed"
+    if isinstance(time_obj, str):
+        time_24hr = datetime.strptime(time_obj, "%H:%M:%S")
+    else:
+        time_24hr = datetime.strptime(time_obj.strftime("%H:%M:%S"), "%H:%M:%S")
+    return time_24hr.strftime("%I:%M %p")
+
 @main.route('/', methods=['GET', 'POST'])
 def homepage():
     try: 
@@ -31,11 +40,21 @@ def homepage():
             restaurants = result.fetchall()
 
         restaurant_data = [serialize_row(dict(row._asdict())) for row in restaurants]
+        time_data = []
+        for row in restaurants:
+            restaurant = serialize_row(dict(row._asdict()))
+            for day in ['monday', 'tues', 'wed', 'thurs','fri', 'sat','sun']:
+                start_key = f'start_hour_{day}'
+                end_key = f'end_hour_{day}'
+                restaurant[start_key] = convert_to_12hr(restaurant.get(start_key))
+                restaurant[end_key] = convert_to_12hr(restaurant.get(end_key))
+            time_data.append(restaurant)
         print(restaurant_data)
         length = len(restaurants)
         print(length)
+        print(time_data[1]['start_hour_monday'])
         i = 0
-        return render_template('homepage.html', res = restaurants, restaurant=restaurant_data, len = length, i = i, min = min)
+        return render_template('homepage.html', time = time_data, res = restaurants, restaurant=restaurant_data, len = length, i = i, min = min)
     except SQLAlchemyError as e:
         print(f"An error occurred: {e}")
 @main.route('/signup', methods=['GET', 'POST'])
