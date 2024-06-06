@@ -1,10 +1,15 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session
+from flask import Blueprint, render_template, request, redirect, url_for, session, flash, Flask
 from sqlalchemy import create_engine, Column, Integer, String, Table, MetaData
 from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime
 from datetime import time
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+
+# import secrets
+# secret_key = secrets.token_hex(16)  # Generates a 32-character hexadecimal key
+# app = Flask(__name__)
+# app.secret_key = secret_key  # Set a secret key for flash messages
 
 main = Blueprint('main', __name__)
 
@@ -99,36 +104,43 @@ def success():
 
     return render_template('successpage.html')
 
+# Create an SQLAlchemy engine (replace with your actual database URL)
+db_url = "postgresql://SavorSense_owner:iX2EMY6TzLlf@ep-shrill-cloud-a40et0x7.us-east-1.aws.neon.tech/SavorSense?sslmode=require"
+engine = create_engine(db_url)
+
+# Define User model (similar to the previous example)
+Base = declarative_base()
+
+class User(Base):
+    __tablename__ = 'users'
+    username = Column(String, primary_key=True)
+    password = Column(String)
+
+def authenticate_user(username, password):
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    user = session.query(User).filter_by(username=username).first()
+
+    if user and user.password == password:
+        return True
+    else:
+        return False
+
 @main.route('/login', methods=['GET', 'POST'])
 def login():
-    # Create an SQLAlchemy engine (replace with your actual database URL)
-    db_url = "postgresql://SavorSense_owner:iX2EMY6TzLlf@ep-shrill-cloud-a40et0x7.us-east-1.aws.neon.tech/SavorSense?sslmode=require"
-    engine = create_engine(db_url)
-    
-    # Define User model (similar to the previous example)
-    Base = declarative_base()
-    
-    class User(Base):
-        __tablename__ = 'Users'
-        username = Column(String, primary_key=True)
-        password = Column(String)
+    if request.method == 'POST':
+        entered_username = request.form.get('username')
+        entered_password = request.form.get('password')
+        if authenticate_user(entered_username, entered_password):
+            # Redirect to the profile or homepage route
+            return redirect(url_for('main.profile'))
+        else:
+            return("Invalid credentials. Please try again.", "error")
 
-    # Authenticate user
-    def authenticate_user(username, password):
-        Session = sessionmaker(bind=engine)
-        session = Session()
-    
-        if request.method == 'POST':
-            entered_username = request.form.get('username')
-            entered_password = request.form.get('password')
-            if authenticate_user(entered_username, entered_password):
-                # Redirect to the profile or homepage route
-                return redirect(url_for('profile'))
-            else:
-                return "Invalid credentials. Please try again."
     return render_template('login.html')
 
-@main.route('/profile')
+@main.route('/profile', methods=['GET', 'POST'])
 def profile():
     return render_template('profile.html')
 
