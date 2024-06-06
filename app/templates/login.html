@@ -77,15 +77,20 @@
     </div>
     <div class="login-form">
         <h1>Welcome Back! Please Log In.</h1>
-        <form action="{{url_for('main.homepage')}}" method="post">
+        <form action="/login" method="post">
             <label for="username">Username:</label>
-            <input type="text" id="username" name="username" required>
+            <input type="text" id="username" name="username" required minlength="4" maxlength="20">
             <label for="password">Password:</label>
-            <input type="password" id="password" name="password" required>
+            <input type="password" id="password" name="password" required minlength="8" pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$"
+                title="Password must contain at least one uppercase letter, one lowercase letter, and one number and be at least 8 characters.">
             <input type="submit" value="Login">
         </form>
         <p>Don't have an account yet? <a class="signup-link" href="/signup">Sign up here!</a></p>
         <p><a class="forget-link" href="/forget">Forgot your password?</a></p>
+        <!-- Display error message if it exists -->
+        {% comment %} {% if error_message %}
+            <div class="error-message">{{ error_message }}</div>
+        {% endif %} {% endcomment %}
     </div>
 </body>
 </html>
