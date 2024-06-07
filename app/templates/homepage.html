@@ -91,6 +91,11 @@
             display: none;
         }
 
+        .restaurant-card.highlight {
+            border: 2px solid #E65E43;
+            background-color: #fff8e1;
+        }
+
         .dropdown {
             position: relative;
             display: inline-block;
@@ -253,6 +258,28 @@
         let mapVisible = false;
         let map;
 
+        function highlightCard(name) {
+            var cards = document.getElementsByClassName('restaurant-card');
+            for (var i = 0; i < cards.length; i++) {
+                var card = cards[i];
+                if (card.getAttribute('data-name').toLowerCase() === name) {
+                    for (var j = 0; j < cards.length; j++) {
+                        cards[j].classList.remove('highlight');
+                    }
+                    card.classList.add('highlight');
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    break;
+                }
+            }
+        }
+
+        function removeHighlight() {
+            var cards = document.getElementsByClassName('restaurant-card');
+            for (var i = 0; i < cards.length; i++) {
+                cards[i].classList.remove('highlight');
+            }
+        }
+
         function showMap() {
             var mapContainer = document.getElementById('map');
 
@@ -271,21 +298,8 @@
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 }).addTo(map);
-
-                // Add markers at specific locations
-                var markers = [
-                    {lat: 51.5, lng: -0.09, popup: 'Marker 1'},
-                    {lat: 51.51, lng: -0.1, popup: 'Marker 2'},
-                    {lat: 51.49, lng: -0.08, popup: 'Marker 3'}, 
-        
-                ];
                 
-                markers.forEach(function(marker) {
-                    L.marker([marker.lat, marker.lng])
-                        .addTo(map)
-                        .bindPopup(marker.popup);
-                });
-
+                var markersDict = {};
                 var restaurantData = JSON.parse('{{restaurant | tojson | safe }}');
                 restaurantData.forEach(function(restaurants) {
                     var lat = restaurants['lat'];  
@@ -294,10 +308,44 @@
                     var rating = restaurants['rating']
                     var address = restaurants['address']
                     var content = `<b>${name}</b><br>Rating: ${rating}<br>Address: ${address}`;
-                    L.marker([lat, lng])
+                    var marker = L.marker([lat, lng])
                             .addTo(map)
                             .bindPopup(content);
+                    markersDict[name.toLowerCase()] = marker;
+
+                    marker.on('click', function () {
+                        highlightCard(name.toLowerCase());
+                    });
+
+                    marker.on('popupclose', function() {
+                        removeHighlight();
+                    });
+
                 });
+
+                document.getElementById('filterInput').addEventListener('input', function() {
+            var filterVal = this.value.toLowerCase();
+            var cards = document.getElementsByClassName('restaurant-card');
+            for (var i = 0; i < cards.length; i++) {
+                var card = cards[i];
+                var name = card.getAttribute('data-name').toLowerCase();
+                var cuisine = card.getAttribute('data-cuisine').toLowerCase();
+                var rating = card.getAttribute('data-rating').toLowerCase();
+                var description = card.getAttribute('data-description').toLowerCase();
+                if (name.includes(filterVal) || cuisine.includes(filterVal) || rating.includes(filterVal) || description.includes(filterVal)) {
+                    card.classList.remove('hidden');
+                    if (markersDict[name]) {
+                        markersDict[name].addTo(map);
+                    }
+                }
+                else {
+                    card.classList.add('hidden');
+                    if (markersDict[name]) {
+                        map.removeLayer(markersDict[name]);
+                    }
+                }
+            }
+        });
 
             } else {
                 map.invalidateSize();
