@@ -114,6 +114,7 @@ Base = declarative_base()
 class User(Base):
     __tablename__ = 'users'
     username = Column(String, primary_key=True)
+    name = Column(String)
     password = Column(String)
 
 def authenticate_user(username, password):
@@ -134,7 +135,18 @@ def login():
         entered_password = request.form.get('password')
         if authenticate_user(entered_username, entered_password):
             # Redirect to the profile or homepage route
-            return redirect(url_for('main.homepage', username=entered_username))
+            Session = sessionmaker(bind=engine)
+            session = Session()
+            user = session.query(User).filter_by(username=entered_username).first()
+            if user:
+                user_name = user.name  # Retrieve the user's name from the database
+            else:
+                user_name = 'Guest'  # Default to 'Guest' if user not found
+
+            session.close()  # Close the session
+
+            # return redirect(url_for('main.homepage', username=entered_username))
+            return render_template('profile.html', user_name=user_name)
         else:
             return "Invalid credentials. Please try again."
 
@@ -143,13 +155,15 @@ def login():
 @main.route('/profile', methods=['GET', 'POST'])
 def profile():
     # Assuming you've already authenticated the user
-    user_name = session.get('username', 'Guest')  # Retrieve the username
-    # Session = sessionmaker(bind=engine)
-    # session = Session()
-    # user = session.query(User).filter_by(username=user_name).first()
-    # if user:
-    #     user_name = user.name
-    # session.close()
+    entered_username = request.args.get('username', 'Guest')  # Retrieve the username
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    user = session.query(User).filter_by(username=entered_username).first()
+    if user:
+        user_name = user.name
+    else:
+        user_name = 'Guest'
+    session.close()
     return render_template('profile.html', user_name=user_name)
 
 @main.route('/forget')
