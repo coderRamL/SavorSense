@@ -8,8 +8,8 @@ from sqlalchemy.orm import sessionmaker
 
 # import secrets
 # secret_key = secrets.token_hex(16)  # Generates a 32-character hexadecimal key
-# app = Flask(__name__)
-# app.secret_key = secret_key  # Set a secret key for flash messages
+app = Flask(__name__)
+# app.secret_key = 'guyhgjguygjyhjygh'  # Set a secret key for flash messages
 
 main = Blueprint('main', __name__)
 
@@ -134,15 +134,23 @@ def login():
         entered_password = request.form.get('password')
         if authenticate_user(entered_username, entered_password):
             # Redirect to the profile or homepage route
-            return redirect(url_for('main.profile'))
+            return redirect(url_for('main.homepage', username=entered_username))
         else:
-            return("Invalid credentials. Please try again.", "error")
+            return "Invalid credentials. Please try again."
 
     return render_template('login.html')
 
 @main.route('/profile', methods=['GET', 'POST'])
 def profile():
-    return render_template('profile.html')
+    # Assuming you've already authenticated the user
+    user_name = session.get('username', 'Guest')  # Retrieve the username
+    # Session = sessionmaker(bind=engine)
+    # session = Session()
+    # user = session.query(User).filter_by(username=user_name).first()
+    # if user:
+    #     user_name = user.name
+    # session.close()
+    return render_template('profile.html', user_name=user_name)
 
 @main.route('/forget')
 def forget():

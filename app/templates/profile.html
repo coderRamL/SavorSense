@@ -87,10 +87,11 @@
     <h1 style="text-align: center; position: relative; left: 500px;">Profile</h1>
     <div class="container">
         <div class="left-section">
-            <img src="{{url_for('static', filename = 'profile.png')}}" alt="Profile">
+            <img src="{{ url_for('static', filename='profile.png') }}" alt="Profile">
             <form id="profile-form">
                 <h1><label for="name">Name</label></h1>
-                <input type="text" id="name" name="name" value="">
+                <input type="text" id="name" name="name" value="{{ user_name }}" readonly>
+                <!-- Display the user's name here -->
                 <h1><label for="age">Age</label></h1>
                 <input type="text" id="age" name="age" value="">
             </form>
