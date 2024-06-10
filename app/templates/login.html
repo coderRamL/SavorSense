@@ -69,6 +69,18 @@
             color: #007bff;
             text-decoration: none;
         }
+
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .flash-messages {
+            margin-bottom: 20px;
+        }
     </style>
 </head>
     <script>
@@ -79,7 +91,20 @@
 <body>
     <div class="logo">
         <h1>SavorSense</h1>
+        <a href="{{url_for('main.homepage')}}"><img src="{{url_for('static', filename = 'house.png')}}" alt="Home" style="width: 50px; height: 50px; position: relative; top: -320px; left: 855px;"></a>
     </div>
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
     <div class="login-form">
         <h1>Welcome Back! Please Log In.</h1>
         <form action="/login" method="post">
@@ -94,5 +119,6 @@
         <p><a class="forget-link" href="/forget">Forgot your password?</a></p>
         <!-- Display error message if it exists -->
     </div>
+</div>
 </body>
 </html>

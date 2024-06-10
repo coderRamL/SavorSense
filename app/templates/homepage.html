@@ -130,7 +130,19 @@
             height: 500px;
             width: 100%;
             display: none;
+            z-index: -1;
         }
+
+        .stars {
+            display: inline-block;
+            font-size: 1.2em;
+            color: gold;
+        }
+
+        .star {
+            display: inline-block;
+        }
+
     </style>
 </head>
 <body>
@@ -178,7 +190,10 @@
                 <h2 class="restaurant-name">{{res[j][1]}}</h2>
                 <p class="restaurant-cuisine">Cuisine: {{res[j][2]}}</p>
                 <p>Price: ${{res[j][26]}}-{{res[j][27]}}</p>
-                <p class="restaurant-rating">Rating: {{res[j][3]}} ⭐⭐⭐⭐({{res[j][4]}}) </p>
+                <p class="restaurant-rating">
+                    Rating: <span class="rating-value">{{res[j][3]}}</span>
+                    <span class="stars" data-rating="{{res[j][3]}}"></span> ({{res[j][4]}})
+                </p>
                 <p class="restaurant-description">Description: {{res[j][5]}}</p>
                 <p class="restaurant-timings">Today's Hours: <span class="timing-value"></span></p>
                 <img style="width: 100px; height: 100px;" src="{{url_for('static', filename=res[j][21])}}">
@@ -187,6 +202,27 @@
         </div>
         {% endfor %}
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var starContainers = document.getElementsByClassName('stars');
+            Array.prototype.forEach.call(starContainers, function(starContainer) {
+                var rating = parseFloat(starContainer.getAttribute('data-rating'));
+                var fullStars = Math.floor(rating);
+                var halfStar = (rating % 1) >= 0.5 ? 1 : 0;
+                starContainer.innerHTML = '';       
+                for (var i = 0; i < fullStars; i++) {
+                    starContainer.innerHTML += '<span class="star">&#9733;</span>'; // Unicode full star
+                }
+                if (halfStar) {
+                    starContainer.innerHTML += '<span class="star">&#9733;</span>'; // Unicode half star
+                }
+                for (var i = fullStars + halfStar; i < 5; i++) {
+                    starContainer.innerHTML += '<span class="star">&#9734;</span>'; // Unicode empty star
+                }
+            });
+        });
+    </script>
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {

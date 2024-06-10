@@ -5,13 +5,17 @@ from datetime import datetime
 from datetime import time
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+import os
 
 # import secrets
 # secret_key = secrets.token_hex(16)  # Generates a 32-character hexadecimal key
-app = Flask(__name__)
-# app.secret_key = 'guyhgjguygjyhjygh'  # Set a secret key for flash messages
+#app = Flask(__name__)
+#app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'default_secret_key')  # Set a secret key for flash messages
 
 main = Blueprint('main', __name__)
+
+app = Flask(__name__)
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'default_secret_key')  # Set a secret key for flash messages
 
 def serialize_row(row):
     serialized_row = {}
@@ -135,19 +139,21 @@ def login():
         entered_password = request.form.get('password')
         if authenticate_user(entered_username, entered_password):
             # Redirect to the profile or homepage route
-            Session = sessionmaker(bind=engine)
-            session = Session()
-            user = session.query(User).filter_by(username=entered_username).first()
-            if user:
-                user_name = user.name  # Retrieve the user's name from the database
-            else:
-                user_name = 'Guest'  # Default to 'Guest' if user not found
+            session['username'] = entered_username
+            #Session = sessionmaker(bind=engine)
+            #session = Session()
+            #user = session.query(User).filter_by(username=entered_username).first()
+            # if user:
+            #     user_name = user.name  # Retrieve the user's name from the database
+            # else:
+            #     user_name = 'Guest'  # Default to 'Guest' if user not found
 
-            session.close()  # Close the session
-            return redirect(url_for('main.profile'))
+            #session.close()  # Close the session
+            return redirect(url_for('main.homepage'))
             # return render_template('profile.html', user_name=user_name)
         else:
-            return "Invalid credentials. Please try again."
+            flash("Invalid credentials. Please try again.", "error")  # Flash an error message
+            return redirect(url_for('main.login'))  # Redirect back to the login page
 
     return render_template('login.html')
 
@@ -165,9 +171,23 @@ def profile():
     # session.close()
     # return render_template('profile.html', user_name=user_name)
     # Retrieve the username from the cookie
-    user_name = request.cookies.get('username', 'Guest')  # Default to 'Guest' if not provided
+    username = session.get('username')
+    if not username:
+        return render_template('notlogin.html')
 
-    return render_template('profile.html', user_name=user_name)
+    Session = sessionmaker(bind=engine)
+    db_session = Session()
+    user = db_session.query(User).filter_by(username=username).first()
+    name = user.name if user else 'Guest'
+    db_session.close()
+    #user_name = request.cookies.get('username', 'Guest')  # Default to 'Guest' if not provided
+
+    return render_template('profile.html', name=name, user_name=username)
+
+@main.route('/logout', methods=['GET', 'POST'])
+def logout():
+    session.pop('username', None)
+    return redirect(url_for('main.login'))
 
 @main.route('/forget')
 def forget():
