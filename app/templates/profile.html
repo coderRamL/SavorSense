@@ -107,6 +107,9 @@
         .logout-button:hover {
             background-color: darkgray;
         }
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -114,14 +117,17 @@
     <div class="container">
         <div class="left-section">
             <img src="{{ url_for('static', filename='profile.png') }}" alt="Profile">
-            <form id="profile-form">
+            <form id="profile-form" action="{{ url_for('main.update_age') }}" method="post">
                 <h1><label for="name">Name</label></h1>
-                <input type="text" id="name" name="name" value="{{ name }}" readonly>
-                <!-- Display the user's name here -->
+                <input type="text" id="name" name="name" value="{{ name }}">
                 <h1><label for="age">Age</label></h1>
-                <input type="text" id="age" name="age" value="">
+                <input type="text" id="age" name="age" value="{{ age }}">
                 <h1><label for="username">Username</label></h1>
                 <input type="text" id="username" name="username" value="{{ user_name }}" readonly>
+                <div id="buttons" class="hidden">
+                    <button type="submit" id="update-button">Update</button>
+                    <button type="button" id="cancel-button">Cancel</button>
+                </div>
             </form>
             <form style="position: relative; top: 100px;" action="{{ url_for('main.logout') }}" method="post">
                 <button type="submit" class="logout-button">Log Out</button>
@@ -248,5 +254,49 @@
         </div>
         <a href="{{url_for('main.homepage')}}"><img src="{{url_for('static', filename = 'house.png')}}" alt="Home" style="width: 50px; height: 50px; position: relative; left: 50px;"></a>
     </div>
+    <script>
+        var nameInput = document.getElementById('name');
+        var ageInput = document.getElementById('age');
+        var buttonsDiv = document.getElementById('buttons');
+        var cancelButton = document.getElementById('cancel-button');
+
+        nameInput.addEventListener('focus', function() {
+            buttonsDiv.classList.remove('hidden');
+        });
+
+        nameInput.addEventListener('blur', function() {
+            setTimeout(function() {
+                if (document.activeElement !== ageInput && document.activeElement !== cancelButton && !buttonsDiv.contains(document.activeElement)) {
+                    buttonsDiv.classList.add('hidden');
+                }
+            }, 200); // Timeout to allow click events on buttons
+        });
+
+        // Show buttons when the age input gains focus
+        ageInput.addEventListener('focus', function() {
+            buttonsDiv.classList.remove('hidden');
+        });
+
+        // Hide buttons when the age input loses focus
+        ageInput.addEventListener('blur', function() {
+            setTimeout(function() {
+                if (document.activeElement !== ageInput && document.activeElement !== cancelButton && !buttonsDiv.contains(document.activeElement)) {
+                    buttonsDiv.classList.add('hidden');
+                }
+            }, 200); // Timeout to allow click events on buttons
+        });
+
+        document.getElementById('cancel-button').addEventListener('click', function() {
+            document.getElementById('name').value = '{{ name }}'
+            document.getElementById('age').value = '{{ age }}'; // Reset the age field to its original value
+            document.getElementById('buttons').classList.add('hidden');
+        });
+
+        document.getElementById('profile-form').addEventListener('submit', function(event) {
+            if (!confirm('Are you sure you want to modify your profile?')) {
+                event.preventDefault(); // Cancel the form submission if the user does not confirm
+            }
+        });
+    </script>
 </body>
 </html>

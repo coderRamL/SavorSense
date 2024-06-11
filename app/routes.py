@@ -119,6 +119,7 @@ class User(Base):
     __tablename__ = 'users'
     username = Column(String, primary_key=True)
     name = Column(String)
+    age = Column(Integer)
     password = Column(String)
 
 def authenticate_user(username, password):
@@ -180,10 +181,11 @@ def profile():
     db_session = Session()
     user = db_session.query(User).filter_by(username=username).first()
     name = user.name if user else 'Guest'
+    age = user.age if user else ''
     db_session.close()
     #user_name = request.cookies.get('username', 'Guest')  # Default to 'Guest' if not provided
 
-    return render_template('profile.html', name=name, user_name=username)
+    return render_template('profile.html', name=name, user_name=username, age=age)
 
 @main.route('/logout', methods=['GET', 'POST'])
 def logout():
@@ -216,6 +218,31 @@ def delete():
         flash('An error occurred while deleting the user', 'error')
         return redirect(url_for('main.profile'))
 
+@main.route('/update_age', methods=['POST'])
+def update_age():
+    try:
+        # Get the username and new age from the form
+        username = request.form.get('username')
+        new_name = request.form.get('name')
+        new_age = request.form.get('age')
+        print(new_age)
+        # Update the user's age in the database
+        engine = create_engine("postgresql://SavorSense_owner:iX2EMY6TzLlf@ep-shrill-cloud-a40et0x7.us-east-1.aws.neon.tech/SavorSense?sslmode=require")
+        metadata = MetaData()
+        metadata.reflect(bind=engine)
+        users_table = metadata.tables['users']
+
+        with engine.connect() as connection:
+            connection.execute(users_table.update().where(users_table.c.username == username).values(name=new_name, age=new_age))
+            connection.commit()
+
+        flash('Age updated successfully.', 'success')
+        return redirect(url_for('main.profile'))
+    except SQLAlchemyError as e:
+        print(f"An error occurred: {e}")
+        flash('An error occurred while updating your age. Please try again.', 'danger')
+        return redirect(url_for('main.profile'))
+    
 @main.route('/forget')
 def forget():
     return render_template('forget.html')
