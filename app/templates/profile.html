@@ -81,6 +81,32 @@
             display: block; 
             margin: 5px 0;
         }
+
+        .delete-button {
+            background-color: red;
+            color: black;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .delete-button:hover {
+            background-color: darkred;
+        }
+
+        .logout-button {
+            background-color: lightgray;
+            color: black;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .logout-button:hover {
+            background-color: darkgray;
+        }
     </style>
 </head>
 <body>
@@ -95,10 +121,14 @@
                 <h1><label for="age">Age</label></h1>
                 <input type="text" id="age" name="age" value="">
                 <h1><label for="username">Username</label></h1>
-                <input type="text" id="username" name="username" value="{{ user_name }}">
+                <input type="text" id="username" name="username" value="{{ user_name }}" readonly>
             </form>
             <form style="position: relative; top: 100px;" action="{{ url_for('main.logout') }}" method="post">
-                <button type="submit">Sign Out</button>
+                <button type="submit" class="logout-button">Log Out</button>
+            </form>
+            <form style="position: relative; top: 150px;" action="{{ url_for('main.delete') }}" method="post" onsubmit="return confirm('Are you sure you want to delete your account?');">
+                <input type="hidden" name="username" value="{{ user_name }}">
+                <button type="submit" class="delete-button">Delete Account</button>
             </form>
         </div>
         <div class="middle-section">
@@ -154,6 +184,10 @@
                     </label>
                     <label>
                         <input type="checkbox" name="dietary-preferences" value="fodmap"> FODMAP
+                    </label>
+                    <label>
+                        <input type="checkbox" name="dietary-preferences" value="Other"> Other
+                        <input type="text" id="dietary" name="dietary" value=""> 
                     </label>
                 </fieldset>
             </form>

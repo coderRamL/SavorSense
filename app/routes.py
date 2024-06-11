@@ -172,6 +172,7 @@ def profile():
     # return render_template('profile.html', user_name=user_name)
     # Retrieve the username from the cookie
     username = session.get('username')
+    print(username)
     if not username:
         return render_template('notlogin.html')
 
@@ -188,6 +189,32 @@ def profile():
 def logout():
     session.pop('username', None)
     return redirect(url_for('main.login'))
+
+@main.route('/delete', methods=['GET', 'POST'])
+def delete():
+    try:
+        username = request.form.get('username')
+        if not username:
+            flash('No username provided', 'error')
+            return redirect(url_for('main.profile'))
+
+        engine = create_engine("postgresql://SavorSense_owner:iX2EMY6TzLlf@ep-shrill-cloud-a40et0x7.us-east-1.aws.neon.tech/SavorSense?sslmode=require")
+        metadata = MetaData()
+        metadata.reflect(bind=engine)
+        users_table = metadata.tables['users']
+
+        with engine.connect() as connection:
+            # Delete the user from the database
+            connection.execute(users_table.delete().where(users_table.c.username == username))
+            connection.commit()
+
+        session.pop('username', None)
+        return redirect(url_for('main.homepage'))
+
+    except SQLAlchemyError as e:
+        print(f"An error occurred: {e}")
+        flash('An error occurred while deleting the user', 'error')
+        return redirect(url_for('main.profile'))
 
 @main.route('/forget')
 def forget():
