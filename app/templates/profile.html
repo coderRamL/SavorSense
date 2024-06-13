@@ -6,38 +6,109 @@
     <title>Food Recommendation Chatbot</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
             margin: 0;
             padding: 0;
             display: flex;
             justify-content: center;
-            align-items: flex-start;
+            align-items: center;
             min-height: 100vh;
+            background-color: #f4f4f4;
+            color: #333;
         }
         .container {
-            display: flex;
-            width: 80%;
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            grid-template-rows: auto;
+            gap: 20px;
+            width: 90%;
+            max-width: 1200px;
             margin: 20px;
-            justify-content: center;
-            align-items: flex-start;
-            position: relative;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
         }
-        .left-section, .middle-section, .right-section {
+        .left-section {
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin-right: 20px;
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
         }
-        .left-section {
-            margin-top: auto;
-            padding-top: 10px;
-            position: relative;
-            right: 100px;
-            top: -150px;
+        .left-section:hover {
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
         }
         .left-section img {
-            width: 150px;
-            height: 150px;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 3px solid #3498db;
+            margin-bottom: 20px;
+        }
+        .left-section form {
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .left-section h1 {
+            font-size: 1.2em;
+            margin: 10px 0;
+            color: #3498db;
+        }
+        .left-section label {
+            font-size: 1em;
+            margin: 5px 0;
+            color: #333;
+        }
+        .left-section input {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0 15px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 1em;
+        }
+        .left-section .button-container {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .left-section button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-size: 1em;
+        }
+        .left-section .update-button {
+            background-color: #3498db;
+            color: #fff;
+        }
+        .left-section .update-button:hover {
+            background-color: #2980b9;
+        }
+        .left-section .cancel-button {
+            background-color: #bdc3c7;
+            color: #333;
+        }
+        .left-section .cancel-button:hover {
+            background-color: #95a5a6;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
         }
         .middle-section, .right-section {
             flex-grow: 1;
@@ -88,11 +159,12 @@
             padding: 10px 20px;
             border: none;
             cursor: pointer;
-            margin-top: 20px;
+            margin-top: 0px;
         }
 
         .delete-button:hover {
             background-color: darkred;
+            color: white
         }
 
         .logout-button {
@@ -101,7 +173,7 @@
             padding: 10px 20px;
             border: none;
             cursor: pointer;
-            margin-top: 20px;
+            margin-top: 0px;
         }
 
         .logout-button:hover {
@@ -110,29 +182,32 @@
         .hidden {
             display: none;
         }
+        .home-section{
+            position: top left;
+        }
     </style>
 </head>
 <body>
-    <h1 style="text-align: center; position: relative; left: 500px;">Profile</h1>
+    <h1 style="text-align: center; position: relative; left: 999px;">Profile Preferences</h1>
     <div class="container">
         <div class="left-section">
             <img src="{{ url_for('static', filename='profile.png') }}" alt="Profile">
-            <form id="profile-form" action="{{ url_for('main.update_age') }}" method="post">
-                <h1><label for="name">Name</label></h1>
-                <input type="text" id="name" name="name" value="{{ name }}">
-                <h1><label for="age">Age</label></h1>
-                <input type="text" id="age" name="age" value="{{ age }}">
-                <h1><label for="username">Username</label></h1>
-                <input type="text" id="username" name="username" value="{{ user_name }}" readonly>
-                <div id="buttons" class="hidden">
-                    <button type="submit" id="update-button">Update</button>
-                    <button type="button" id="cancel-button">Cancel</button>
-                </div>
-            </form>
-            <form style="position: relative; top: 100px;" action="{{ url_for('main.logout') }}" method="post">
+            <form style="position: relative; top: 0px;" action="{{ url_for('main.logout') }}" method="post">
                 <button type="submit" class="logout-button">Log Out</button>
             </form>
-            <form style="position: relative; top: 150px;" action="{{ url_for('main.delete') }}" method="post" onsubmit="return confirm('Are you sure you want to delete your account?');">
+            <form id="profile-form" action="{{ url_for('main.update_age') }}" method="post">
+                <h1><label for="name">Name</label></h1>
+                <input type="text" id="name" name="name" value="{{ name }}" readonly>
+                <h1><label for="age">Age</label></h1>
+                <input type="text" id="age" name="age" value="{{ age }}">
+                <div id="buttons" class="hidden">
+                    <button type="button" id="cancel-button">Cancel</button>
+                    <button type="submit" id="update-button">Update</button>
+                </div>
+                <h1><label for="username">Username</label></h1>
+                <input type="text" id="username" name="username" value="{{ user_name }}" readonly>
+            </form>
+            <form style="position: relative; top: 190px;" action="{{ url_for('main.delete') }}" method="post" onsubmit="return confirm('Are you sure you want to delete your account?');">
                 <input type="hidden" name="username" value="{{ user_name }}">
                 <button type="submit" class="delete-button">Delete Account</button>
             </form>
@@ -264,7 +339,9 @@
                 </div>
             </form>
         </div>
-        <a href="{{url_for('main.homepage')}}"><img src="{{url_for('static', filename = 'house.png')}}" alt="Home" style="width: 50px; height: 50px; position: relative; left: 50px;"></a>
+    </div>
+    <div class="home-section">
+        <a href="{{url_for('main.homepage')}}"><img src="{{url_for('static', filename = 'house.png')}}" alt="Home" style="width: 50px; height: 50px; position: left; left: 50px;"></a>
     </div>
     <script>
         var nameInput = document.getElementById('name');
