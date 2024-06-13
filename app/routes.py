@@ -6,6 +6,7 @@ from datetime import time
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
+import json
 
 # import secrets
 # secret_key = secrets.token_hex(16)  # Generates a 32-character hexadecimal key
@@ -121,6 +122,8 @@ class User(Base):
     name = Column(String)
     age = Column(Integer)
     password = Column(String)
+    dietary = Column(String)
+    
 
 def authenticate_user(username, password):
     Session = sessionmaker(bind=engine)
@@ -182,10 +185,24 @@ def profile():
     user = db_session.query(User).filter_by(username=username).first()
     name = user.name if user else 'Guest'
     age = user.age if user else ''
+    try:
+        metadata = MetaData()
+        metadata.reflect(bind=engine)
+        users_table = metadata.tables['users']
+        with engine.connect() as connection:
+            select_stmt = users_table.select().where(users_table.c.username == username)
+            result = connection.execute(select_stmt).fetchone()
+        dietary = result.dietary if result else '[dietary]'
+        cuisine = result.cuisine if result else '[cuisine]'
+        print(dietary)
+    except SQLAlchemyError as e:
+        flash(f'An error occurred: {e}', 'danger')
+        return redirect(url_for('main.login'))
+    
     db_session.close()
     #user_name = request.cookies.get('username', 'Guest')  # Default to 'Guest' if not provided
 
-    return render_template('profile.html', name=name, user_name=username, age=age)
+    return render_template('profile.html', name=name, user_name=username, age=age, dietary=dietary, cuisine=cuisine)
 
 @main.route('/logout', methods=['GET', 'POST'])
 def logout():
@@ -242,7 +259,59 @@ def update_age():
         print(f"An error occurred: {e}")
         flash('An error occurred while updating your age. Please try again.', 'danger')
         return redirect(url_for('main.profile'))
-    
+
+@main.route('/dietary', methods=['GET', 'POST'])
+def dietary():
+    if 'username' not in session:
+        flash('You must be logged in to update your preferences', 'danger')
+        return redirect(url_for('main.login'))
+
+    username = session['username']
+    dietary_preferences = request.form.getlist('dietary-preferences')
+    dietary_preferences_json = json.dumps(dietary_preferences)
+    other_dietary = request.form.get('dietary-other')
+    print(dietary_preferences)
+    try:
+        engine = create_engine("postgresql://SavorSense_owner:iX2EMY6TzLlf@ep-shrill-cloud-a40et0x7.us-east-1.aws.neon.tech/SavorSense?sslmode=require")
+        metadata = MetaData()
+        metadata.reflect(bind=engine)
+        users_table = metadata.tables['users']
+        with engine.connect() as connection:
+            connection.execute(users_table.update().where(users_table.c.username == username)
+                .values(dietary=dietary_preferences))
+            connection.commit()
+        print("Successful commit")
+        flash('Dietary preferences updated successfully', 'success')
+    except SQLAlchemyError as e:
+        flash(f'An error occurred: {e}', 'danger')
+
+    return redirect(url_for('main.profile'))
+
+@main.route('/cuisine', methods=['GET', 'POST'])
+def cuisine():
+    if 'username' not in session:
+        flash('You must be logged in to update your preferences', 'danger')
+        return redirect(url_for('main.login'))
+
+    username = session['username']
+    cuisine_preferences = request.form.getlist('cuisine-preferences')
+    print(cuisine_preferences)
+    try:
+        engine = create_engine("postgresql://SavorSense_owner:iX2EMY6TzLlf@ep-shrill-cloud-a40et0x7.us-east-1.aws.neon.tech/SavorSense?sslmode=require")
+        metadata = MetaData()
+        metadata.reflect(bind=engine)
+        users_table = metadata.tables['users']
+        with engine.connect() as connection:
+            connection.execute(users_table.update().where(users_table.c.username == username)
+                .values(cuisine=cuisine_preferences))
+            connection.commit()
+        print("Successful commit")
+        flash('Cuisine preferences updated successfully', 'success')
+    except SQLAlchemyError as e:
+        flash(f'An error occurred: {e}', 'danger')
+
+    return redirect(url_for('main.profile')) 
+
 @main.route('/forget')
 def forget():
     return render_template('forget.html')
