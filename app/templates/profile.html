@@ -194,6 +194,14 @@
             top: 30px;
             left: 30px;
         }
+
+        .input-textarea {
+            width: 600px;
+            height: 50px;
+            position: relative;
+            left: 200px;
+            resize: none;
+        }
     </style>
 </head>
 <body>
@@ -222,118 +230,130 @@
             </form>
         </div>
         <div class="middle-section">
-            <form id="allergy-form">
+            <form id="allergy-form" action="{{url_for('main.allergies')}}" method="post">
                 <h2 style="position: relative; left: 200px;"><label for="allergies">Specify any allergies here</label></h2>
-                <input type="text" id="allergies" name="allergies" value="" style="width: 600px; height: 50px; position: relative; left: 200px">
+                <textarea id="allergies" name="allergies" class="input-textarea">{{ allergies }}</textarea>
+                <div id="buttons2" class="hidden">
+                    <button type="submit" id="update2-button">Update</button>
+                    <button type="button" id="cancel2-button">Cancel</button>
+                </div>
                 </form>
             <h1 style="position: relative; top: 10px;">Dietary Preferences</h1>
-            <form id="dietary-form">
+            <form id="dietary-form" action="{{url_for('main.dietary')}}" method="post">
                 <fieldset>
                     <legend>Select Dietary Preferences:</legend>
                     <label>
-                        <input type="checkbox" name="dietary-preferences" value="omnivore"> Omnivore
+                        <input type="checkbox" name="dietary-preferences" value="omnivore" {% if 'omnivore' in dietary %}checked{% endif %}> Omnivore
                     </label>
                     <label>
-                        <input type="checkbox" name="dietary-preferences" value="vegetarian"> Vegetarian
+                        <input type="checkbox" name="dietary-preferences" value="vegetarian" {% if 'vegetarian' in dietary %}checked{% endif %}> Vegetarian
                     </label>
                     <label>
-                        <input type="checkbox" name="dietary-preferences" value="vegan"> Vegan
+                        <input type="checkbox" name="dietary-preferences" value="vegan" {% if 'vegan' in dietary %}checked{% endif %}> Vegan
                     </label>
                     <label>
-                        <input type="checkbox" name="dietary-preferences" value="pescatarian"> Pescatarian
+                        <input type="checkbox" name="dietary-preferences" value="pescatarian" {% if 'pescatarian' in dietary %}checked{% endif %}> Pescatarian
                     </label>
                     <label>
-                        <input type="checkbox" name="dietary-preferences" value="gluten-free"> Gluten-Free
+                        <input type="checkbox" name="dietary-preferences" value="gluten-free" {% if 'gluten-free' in dietary %}checked{% endif %}> Gluten-Free
                     </label>
                     <label>
-                        <input type="checkbox" name="dietary-preferences" value="lactose-free"> Lactose-Free
+                        <input type="checkbox" name="dietary-preferences" value="lactose-free" {% if 'lactose-free' in dietary %}checked{% endif %}> Lactose-Free
                     </label>
                     <label>
-                        <input type="checkbox" name="dietary-preferences" value="keto"> Keto
+                        <input type="checkbox" name="dietary-preferences" value="keto" {% if 'keto' in dietary %}checked{% endif %}> Keto
                     </label>
                     <label>
-                        <input type="checkbox" name="dietary-preferences" value="paleo"> Paleo
+                        <input type="checkbox" name="dietary-preferences" value="paleo" {% if 'paleo' in dietary %}checked{% endif %}> Paleo
                     </label>
                     <label>
-                        <input type="checkbox" name="dietary-preferences" value="low-carb"> Low-Carb
+                        <input type="checkbox" name="dietary-preferences" value="low-carb" {% if 'low-carb' in dietary %}checked{% endif %}> Low-Carb
                     </label>
                     <label>
-                        <input type="checkbox" name="dietary-preferences" value="low-fat"> Low-Fat
+                        <input type="checkbox" name="dietary-preferences" value="low-fat" {% if 'low-fat' in dietary %}checked{% endif %}> Low-Fat
                     </label>
                     <label>
-                        <input type="checkbox" name="dietary-preferences" value="nut-free"> Nut-Free
+                        <input type="checkbox" name="dietary-preferences" value="nut-free" {% if 'nut-free' in dietary %}checked{% endif %}> Nut-Free
                     </label>
                     <label>
-                        <input type="checkbox" name="dietary-preferences" value="halal"> Halal
+                        <input type="checkbox" name="dietary-preferences" value="halal" {% if 'halal' in dietary %}checked{% endif %}> Halal
                     </label>
                     <label>
-                        <input type="checkbox" name="dietary-preferences" value="kosher"> Kosher
+                        <input type="checkbox" name="dietary-preferences" value="kosher" {% if 'kosher' in dietary %}checked{% endif %}> Kosher
                     </label>
                     <label>
-                        <input type="checkbox" name="dietary-preferences" value="organic"> Organic
+                        <input type="checkbox" name="dietary-preferences" value="organic" {% if 'organic' in dietary %}checked{% endif %}> Organic
                     </label>
                     <label>
-                        <input type="checkbox" name="dietary-preferences" value="fodmap"> FODMAP
+                        <input type="checkbox" name="dietary-preferences" value="fodmap" {% if 'fodmap' in dietary %}checked{% endif %}> FODMAP
                     </label>
                     <label>
-                        <input type="checkbox" name="dietary-preferences" value="Other"> Other
-                        <input type="text" id="dietary" name="dietary" value=""> 
+                        <input type="checkbox" name="dietary-preferences" id="dietary-other-checkbox" value="Other" {% if 'Other' in dietary %}checked{% endif %}> Other
+                        <input type="text" id="dietary-other" name="dietary-other" value="{{other_dietary}}"> 
                     </label>
                 </fieldset>
+                <div id="buttons3" class="hidden">
+                    <button type="submit" id="update3-button">Update</button>
+                    <button type="button" id="cancel3-button">Cancel</button>
+                </div>
             </form>
         </div>
         <div class="right-section">
             <h1 style="position: relative; top: 10px;">Cuisine Preferences</h1>
-            <form id="cuisine-form">
+            <form id="cuisine-form" action="{{url_for('main.cuisine')}}" method="post">
                 <fieldset>
                     <legend>Select Cuisine Preferences:</legend>
                     <label>
-                        <input type="checkbox" name="cuisine-preferences" value="Italian"> Italian
+                        <input type="checkbox" name="cuisine-preferences" value="Italian" {% if 'Italian' in cuisine %}checked{% endif %}> Italian
                     </label>
                     <label>
-                        <input type="checkbox" name="cuisine-preferences" value="Mexican"> Mexican
+                        <input type="checkbox" name="cuisine-preferences" value="Mexican" {% if 'Mexican' in cuisine %}checked{% endif %}> Mexican
                     </label>
                     <label>
-                        <input type="checkbox" name="cuisine-preferences" value="Japanese"> Japanese
+                        <input type="checkbox" name="cuisine-preferences" value="Japanese" {% if 'Japanese' in cuisine %}checked{% endif %}> Japanese
                     </label>
                     <label>
-                        <input type="checkbox" name="cuisine-preferences" value="Indian"> Indian
+                        <input type="checkbox" name="cuisine-preferences" value="Indian" {% if 'Indian' in cuisine %}checked{% endif %}> Indian
                     </label>
                     <label>
-                        <input type="checkbox" name="cuisine-preferences" value="Thai"> Thai
+                        <input type="checkbox" name="cuisine-preferences" value="Thai" {% if 'Thai' in cuisine %}checked{% endif %}> Thai
                     </label>
                     <label>
-                        <input type="checkbox" name="cuisine-preferences" value="Chinese"> Chinese
+                        <input type="checkbox" name="cuisine-preferences" value="Chinese" {% if 'Chinese' in cuisine %}checked{% endif %}> Chinese
                     </label>
                     <label>
-                        <input type="checkbox" name="cuisine-preferences" value="French"> French
+                        <input type="checkbox" name="cuisine-preferences" value="French" {% if 'French' in cuisine %}checked{% endif %}> French
                     </label>
                     <label>
-                        <input type="checkbox" name="cuisine-preferences" value="Mediterranean"> Mediterranean
+                        <input type="checkbox" name="cuisine-preferences" value="Mediterranean" {% if 'Mediterranean' in cuisine %}checked{% endif %}> Mediterranean
                     </label>
                     <label>
-                        <input type="checkbox" name="cuisine-preferences" value="Middle Eastern"> Middle Eastern
+                        <input type="checkbox" name="cuisine-preferences" value="Middle Eastern" {% if 'Middle Eastern' in cuisine %}checked{% endif %}> Middle Eastern
                     </label>
                     <label>
-                        <input type="checkbox" name="cuisine-preferences" value="American"> American
+                        <input type="checkbox" name="cuisine-preferences" value="American" {% if 'American' in cuisine %}checked{% endif %}> American
                     </label>
                     <label>
-                        <input type="checkbox" name="cuisine-preferences" value="Korean"> Korean
+                        <input type="checkbox" name="cuisine-preferences" value="Korean" {% if 'Korean' in cuisine %}checked{% endif %}> Korean
                     </label>
                     <label>
-                        <input type="checkbox" name="cuisine-preferences" value="Vietnamese"> Vietnamese
+                        <input type="checkbox" name="cuisine-preferences" value="Vietnamese" {% if 'Vietnamese' in cuisine %}checked{% endif %}> Vietnamese
                     </label>
                     <label>
-                        <input type="checkbox" name="cuisine-preferences" value="Burmese"> Burmese
+                        <input type="checkbox" name="cuisine-preferences" value="Burmese" {% if 'Burmese' in cuisine %}checked{% endif %}> Burmese
                     </label>
                     <label>
-                        <input type="checkbox" name="cuisine-preferences" value="German"> German
+                        <input type="checkbox" name="cuisine-preferences" value="German" {% if 'German' in cuisine %}checked{% endif %}> German
                     </label>
                     <label>
-                        <input type="checkbox" name="cuisine-preferences" value="Other"> Other
-                        <input type="text" id="cuisine" name="cuisine" value=""> 
+                        <input type="checkbox" id ="cuisine-other-checkbox" name="cuisine-preferences" value="Other" {% if 'Other' in cuisine %}checked{% endif %}> Other
+                        <input type="text" id="cuisine-other" name="cuisine-other" value="{{other_cuisine}}"> 
                     </label>
                 </fieldset>
+                <div id="buttons4" class="hidden">
+                    <button type="submit" id="update4-button">Update</button>
+                    <button type="button" id="cancel4-button">Cancel</button>
+                </div>
             </form>
         </div>
     </div>
@@ -383,6 +403,123 @@
                 event.preventDefault(); // Cancel the form submission if the user does not confirm
             }
         });
+        var allergyInput = document.getElementById('allergies');
+        var buttons2Div = document.getElementById('buttons2');
+        var cancel2Button = document.getElementById('cancel2-button'); 
+        var dietaryForm = document.getElementById('dietary-form');
+        var checkboxes = dietaryForm.querySelectorAll('input[type="checkbox"]');
+        var otherInput = document.getElementById('dietary-other');
+        var buttons3Div = document.getElementById('buttons3');
+        var cancel3Button = document.getElementById('cancel3-button');
+        var originalDietaryValues = {};
+        var otherCheckBoxD = document.getElementById('dietary-other-checkbox');
+
+        allergyInput.addEventListener('focus', function() {
+            buttons2Div.classList.remove('hidden');
+        });
+
+        
+        allergyInput.addEventListener('blur', function() {
+            setTimeout(function() {
+                if (document.activeElement !== allergyInput && document.activeElement !== cancel2Button && !buttons2Div.contains(document.activeElement)) {
+                    buttons2Div.classList.add('hidden');
+                }
+            }, 200); // Timeout to allow click events on buttons
+        });
+
+        document.getElementById('cancel2-button').addEventListener('click', function() {
+            document.getElementById('allergies').value = '{{ allergies }}'
+            document.getElementById('buttons2').classList.add('hidden');
+        });
+
+        document.getElementById('allergy-form').addEventListener('submit', function(event) {
+            if (!confirm('Are you sure you want to modify your allergies?')) {
+                event.preventDefault(); // Cancel the form submission if the user does not confirm
+            }
+        });
+
+        checkboxes.forEach(function(checkbox) {
+            originalDietaryValues[checkbox.value] = checkbox.checked;
+            checkbox.addEventListener('change', function() {
+                buttons3Div.classList.remove('hidden');
+            });
+        });
+
+        otherInput.addEventListener('focus', function() {
+            otherCheckBoxD.checked = true;
+            buttons3Div.classList.remove('hidden');
+        });
+
+        otherInput.addEventListener('blur', function() {
+            setTimeout(function() {
+                if (document.activeElement !== otherInput && document.activeElement !== cancel3Button && !buttons3Div.contains(document.activeElement)) {
+                    buttons3Div.classList.add('hidden');
+                }
+            }, 200);
+            if (otherInput.value === '') {
+                otherCheckBoxD.checked = false;
+            }
+        });
+
+        cancel3Button.addEventListener('click', function() {
+            checkboxes.forEach(function(checkbox) {
+                checkbox.checked = originalDietaryValues[checkbox.value];
+            });
+            otherInput.value = ''; // Or reset to original value if applicable
+            buttons3Div.classList.add('hidden');
+        });
+
+        dietaryForm.addEventListener('submit', function(event) {
+            if (!confirm('Are you sure you want to update your dietary preferences?')) {
+                event.preventDefault();
+            }
+        });
+
+        var cuisineForm = document.getElementById('cuisine-form');
+        var checkboxed = cuisineForm.querySelectorAll('input[type="checkbox"]');
+        var otherInput2 = document.getElementById('cuisine-other');
+        var buttons4Div = document.getElementById('buttons4');
+        var cancel4Button = document.getElementById('cancel4-button');
+        var originalCuisineValues = {};
+        var otherCheckBoxC = document.getElementById('cuisine-other-checkbox')
+
+        checkboxed.forEach(function(checkbox) {
+            originalCuisineValues[checkbox.value] = checkbox.checked;
+            checkbox.addEventListener('change', function() {
+                buttons4Div.classList.remove('hidden');
+            });
+        });
+
+        otherInput2.addEventListener('focus', function() {
+            otherCheckBoxC.checked = true;
+            buttons4Div.classList.remove('hidden');
+        });
+
+        otherInput2.addEventListener('blur', function() {
+            setTimeout(function() {
+                if (document.activeElement !== otherInput2 && document.activeElement !== cancel4Button && !buttons4Div.contains(document.activeElement)) {
+                    buttons4Div.classList.add('hidden');
+                }
+            }, 200);
+            if (otherInput2.value === '') {
+                otherCheckBoxC.checked = false;
+            }
+        });
+
+        cancel4Button.addEventListener('click', function() {
+            checkboxed.forEach(function(checkbox) {
+                checkbox.checked = originalCuisineValues[checkbox.value];
+            });
+            otherInput2.value = ''; // Or reset to original value if applicable
+            buttons4Div.classList.add('hidden');
+        });
+
+        cuisineForm.addEventListener('submit', function(event) {
+            if (!confirm('Are you sure you want to update your cuisine preferences?')) {
+                event.preventDefault();
+            }
+        });
+
     </script>
 </body>
 </html>
