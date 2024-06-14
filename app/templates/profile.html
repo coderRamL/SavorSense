@@ -185,6 +185,14 @@
         .home-section{
             position: top left;
         }
+
+        .input-textarea {
+            width: 600px;
+            height: 50px;
+            position: relative;
+            left: 200px;
+            resize: none;
+        }
     </style>
 </head>
 <body>
@@ -213,9 +221,9 @@
             </form>
         </div>
         <div class="middle-section">
-            <form id="allergy-form">
+            <form id="allergy-form" action="{{url_for('main.allergies')}}" method="post">
                 <h2 style="position: relative; left: 200px;"><label for="allergies">Specify any allergies here</label></h2>
-                <input type="text" id="allergies" name="allergies" value="" style="width: 600px; height: 50px; position: relative; left: 200px">
+                <textarea id="allergies" name="allergies" class="input-textarea">{{ allergies }}</textarea>
                 <div id="buttons2" class="hidden">
                     <button type="submit" id="update2-button">Update</button>
                     <button type="button" id="cancel2-button">Cancel</button>
@@ -271,8 +279,8 @@
                         <input type="checkbox" name="dietary-preferences" value="fodmap" {% if 'fodmap' in dietary %}checked{% endif %}> FODMAP
                     </label>
                     <label>
-                        <input type="checkbox" name="dietary-preferences" value="Other" {% if 'Other' in dietary %}checked{% endif %}> Other
-                        <input type="text" id="dietary-other" name="dietary-other" value=""> 
+                        <input type="checkbox" name="dietary-preferences" id="dietary-other-checkbox" value="Other" {% if 'Other' in dietary %}checked{% endif %}> Other
+                        <input type="text" id="dietary-other" name="dietary-other" value="{{other_dietary}}"> 
                     </label>
                 </fieldset>
                 <div id="buttons3" class="hidden">
@@ -329,8 +337,8 @@
                         <input type="checkbox" name="cuisine-preferences" value="German" {% if 'German' in cuisine %}checked{% endif %}> German
                     </label>
                     <label>
-                        <input type="checkbox" name="cuisine-preferences" value="Other" {% if 'Other' in cuisine %}checked{% endif %}> Other
-                        <input type="text" id="cuisine-other" name="cuisine-other" value=""> 
+                        <input type="checkbox" id ="cuisine-other-checkbox" name="cuisine-preferences" value="Other" {% if 'Other' in cuisine %}checked{% endif %}> Other
+                        <input type="text" id="cuisine-other" name="cuisine-other" value="{{other_cuisine}}"> 
                     </label>
                 </fieldset>
                 <div id="buttons4" class="hidden">
@@ -386,13 +394,40 @@
                 event.preventDefault(); // Cancel the form submission if the user does not confirm
             }
         });
-
+        var allergyInput = document.getElementById('allergies');
+        var buttons2Div = document.getElementById('buttons2');
+        var cancel2Button = document.getElementById('cancel2-button'); 
         var dietaryForm = document.getElementById('dietary-form');
         var checkboxes = dietaryForm.querySelectorAll('input[type="checkbox"]');
         var otherInput = document.getElementById('dietary-other');
         var buttons3Div = document.getElementById('buttons3');
         var cancel3Button = document.getElementById('cancel3-button');
         var originalDietaryValues = {};
+        var otherCheckBoxD = document.getElementById('dietary-other-checkbox');
+
+        allergyInput.addEventListener('focus', function() {
+            buttons2Div.classList.remove('hidden');
+        });
+
+        
+        allergyInput.addEventListener('blur', function() {
+            setTimeout(function() {
+                if (document.activeElement !== allergyInput && document.activeElement !== cancel2Button && !buttons2Div.contains(document.activeElement)) {
+                    buttons2Div.classList.add('hidden');
+                }
+            }, 200); // Timeout to allow click events on buttons
+        });
+
+        document.getElementById('cancel2-button').addEventListener('click', function() {
+            document.getElementById('allergies').value = '{{ allergies }}'
+            document.getElementById('buttons2').classList.add('hidden');
+        });
+
+        document.getElementById('allergy-form').addEventListener('submit', function(event) {
+            if (!confirm('Are you sure you want to modify your allergies?')) {
+                event.preventDefault(); // Cancel the form submission if the user does not confirm
+            }
+        });
 
         checkboxes.forEach(function(checkbox) {
             originalDietaryValues[checkbox.value] = checkbox.checked;
@@ -402,6 +437,7 @@
         });
 
         otherInput.addEventListener('focus', function() {
+            otherCheckBoxD.checked = true;
             buttons3Div.classList.remove('hidden');
         });
 
@@ -411,6 +447,9 @@
                     buttons3Div.classList.add('hidden');
                 }
             }, 200);
+            if (otherInput.value === '') {
+                otherCheckBoxD.checked = false;
+            }
         });
 
         cancel3Button.addEventListener('click', function() {
@@ -433,6 +472,7 @@
         var buttons4Div = document.getElementById('buttons4');
         var cancel4Button = document.getElementById('cancel4-button');
         var originalCuisineValues = {};
+        var otherCheckBoxC = document.getElementById('cuisine-other-checkbox')
 
         checkboxed.forEach(function(checkbox) {
             originalCuisineValues[checkbox.value] = checkbox.checked;
@@ -442,6 +482,7 @@
         });
 
         otherInput2.addEventListener('focus', function() {
+            otherCheckBoxC.checked = true;
             buttons4Div.classList.remove('hidden');
         });
 
@@ -451,6 +492,9 @@
                     buttons4Div.classList.add('hidden');
                 }
             }, 200);
+            if (otherInput2.value === '') {
+                otherCheckBoxC.checked = false;
+            }
         });
 
         cancel4Button.addEventListener('click', function() {

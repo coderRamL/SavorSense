@@ -192,8 +192,27 @@ def profile():
         with engine.connect() as connection:
             select_stmt = users_table.select().where(users_table.c.username == username)
             result = connection.execute(select_stmt).fetchone()
-        dietary = result.dietary if result else '[dietary]'
-        cuisine = result.cuisine if result else '[cuisine]'
+        dietary = result.dietary if result and result.dietary else ''
+        cuisine = result.cuisine if result and result.cuisine else ''
+        other_dietary = result.dietary_other if result and result.dietary_other else ''
+        other_cuisine = result.cuisine_other if result and result.cuisine_other else '' 
+        allergies = result.allergies if result and result.allergies else ''
+
+        if isinstance(other_dietary, list):
+            other_dietary = ', '.join(other_dietary)
+        elif other_dietary:
+            other_dietary = other_dietary.strip('[]"').replace('", "', ', ')
+
+        if isinstance(other_cuisine, list):
+            other_cuisine = ', '.join(other_cuisine)
+        elif other_cuisine:
+            other_cuisine = other_cuisine.strip('[]"').replace('", "', ', ')
+
+        if isinstance(allergies, list):
+            allergies = ', '.join(allergies)
+        elif allergies:
+            allergies = allergies.strip('[]"').replace('", "', ', ')
+
         print(dietary)
     except SQLAlchemyError as e:
         flash(f'An error occurred: {e}', 'danger')
@@ -202,7 +221,7 @@ def profile():
     db_session.close()
     #user_name = request.cookies.get('username', 'Guest')  # Default to 'Guest' if not provided
 
-    return render_template('profile.html', name=name, user_name=username, age=age, dietary=dietary, cuisine=cuisine)
+    return render_template('profile.html', name=name, user_name=username, age=age, dietary=dietary, cuisine=cuisine, other_dietary=other_dietary, other_cuisine=other_cuisine, allergies=allergies)
 
 @main.route('/logout', methods=['GET', 'POST'])
 def logout():
@@ -268,9 +287,9 @@ def dietary():
 
     username = session['username']
     dietary_preferences = request.form.getlist('dietary-preferences')
-    dietary_preferences_json = json.dumps(dietary_preferences)
-    other_dietary = request.form.get('dietary-other')
-    print(dietary_preferences)
+    other_dietary = request.form.getlist('dietary-other')
+    dietary_preferences_json = json.dumps(other_dietary) 
+    print(other_dietary)
     try:
         engine = create_engine("postgresql://SavorSense_owner:iX2EMY6TzLlf@ep-shrill-cloud-a40et0x7.us-east-1.aws.neon.tech/SavorSense?sslmode=require")
         metadata = MetaData()
@@ -278,10 +297,9 @@ def dietary():
         users_table = metadata.tables['users']
         with engine.connect() as connection:
             connection.execute(users_table.update().where(users_table.c.username == username)
-                .values(dietary=dietary_preferences))
+                .values(dietary=dietary_preferences, dietary_other=other_dietary))
             connection.commit()
         print("Successful commit")
-        flash('Dietary preferences updated successfully', 'success')
     except SQLAlchemyError as e:
         flash(f'An error occurred: {e}', 'danger')
 
@@ -295,6 +313,7 @@ def cuisine():
 
     username = session['username']
     cuisine_preferences = request.form.getlist('cuisine-preferences')
+    other_cuisine = request.form.getlist('cuisine-other')
     print(cuisine_preferences)
     try:
         engine = create_engine("postgresql://SavorSense_owner:iX2EMY6TzLlf@ep-shrill-cloud-a40et0x7.us-east-1.aws.neon.tech/SavorSense?sslmode=require")
@@ -303,14 +322,37 @@ def cuisine():
         users_table = metadata.tables['users']
         with engine.connect() as connection:
             connection.execute(users_table.update().where(users_table.c.username == username)
-                .values(cuisine=cuisine_preferences))
+                .values(cuisine=cuisine_preferences, cuisine_other=other_cuisine))
             connection.commit()
         print("Successful commit")
-        flash('Cuisine preferences updated successfully', 'success')
     except SQLAlchemyError as e:
         flash(f'An error occurred: {e}', 'danger')
 
-    return redirect(url_for('main.profile')) 
+    return redirect(url_for('main.profile'))
+
+@main.route('/allergies', methods=['GET', 'POST'])
+def allergies():
+    if 'username' not in session:
+        flash('You must be logged in to update your preferences', 'danger')
+        return redirect(url_for('main.login'))
+
+    username = session['username']
+    allergy_preferences = request.form.getlist('allergies')
+    print("Allergies: %s" % allergy_preferences)
+    try:
+        engine = create_engine("postgresql://SavorSense_owner:iX2EMY6TzLlf@ep-shrill-cloud-a40et0x7.us-east-1.aws.neon.tech/SavorSense?sslmode=require")
+        metadata = MetaData()
+        metadata.reflect(bind=engine)
+        users_table = metadata.tables['users']
+        with engine.connect() as connection:
+            connection.execute(users_table.update().where(users_table.c.username == username)
+                .values(allergies=allergy_preferences))
+            connection.commit()
+        print("Successful commit")
+    except SQLAlchemyError as e:
+        flash(f'An error occurred: {e}', 'danger')
+
+    return redirect(url_for('main.profile'))  
 
 @main.route('/forget')
 def forget():
