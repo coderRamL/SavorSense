@@ -3,4 +3,4 @@ scikit-learn==0.24.2
 spaCy==3.1.2
 SQLAlchemy
 psycopg2
-easygui
+nltk

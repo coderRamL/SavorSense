@@ -143,6 +143,86 @@
             display: inline-block;
         }
 
+        .chatbot-container {
+            position: fixed;
+            bottom: 0;
+            right: 20px;
+            width: 300px;
+            max-height: 400px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 10px 10px 0 0;
+            background-color: #ffffff;
+            overflow: hidden;
+            transform: translateY(100%);
+            transition: transform 0.3s ease-in-out;
+        }
+        .chatbot-header {
+            background-color: #E65E43;
+            padding: 10px;
+            color: white;
+            text-align: center;
+            font-weight: bold;
+        }
+        .chatbot-messages {
+            flex-grow: 1;
+            padding: 10px;
+            overflow-y: auto;
+            border-top: 1px solid #ddd;
+        }
+        .chatbot-input {
+            display: flex;
+            border-top: 1px solid #ddd;
+        }
+        .chatbot-input input {
+            flex-grow: 1;
+            border: none;
+            padding: 10px;
+            font-size: 16px;
+        }
+        .chatbot-input button {
+            background-color: #E65E43;
+            color: white;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+        }
+        .chatbot-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background-color: #E65E43;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .chatbot-container.active {
+            transform: translateY(0);
+        }
+        .chatbot-messages .user-message,
+        .chatbot-messages .bot-message {
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 10px;
+            max-width: 80%;
+        }
+        .chatbot-messages .user-message {
+            background-color: #e0e0e0;
+            align-self: flex-end;
+        }
+        .chatbot-messages .bot-message {
+            background-color: #E65E43;
+            color: white;
+            align-self: flex-start;
+        }
     </style>
 </head>
 <body>
@@ -203,7 +283,67 @@
         {% endfor %}
     </div>
 
+    <div class="chatbot-container" id="chatbot-container">
+        <div class="chatbot-header">Chat with us!</div>
+        <div class="chatbot-messages" id="chatbot-messages">
+            <!-- Chat messages will appear here -->
+        </div>
+        <div class="chatbot-input">
+            <input type="text" id="chatbot-input" placeholder="Type a message...">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+    <div class="chatbot-toggle" id="chatbot-toggle">&#x1F4AC;</div>
+
     <script>
+        document.getElementById('chatbot-toggle').addEventListener('click', function() {
+            var chatbotContainer = document.getElementById('chatbot-container');
+            chatbotContainer.classList.toggle('active');
+        });
+
+        // Function to send a message to the chatbot
+        function sendMessage() {
+        var input = document.getElementById('chatbot-input');
+        var message = input.value.trim();
+        if (message) {
+            var messageContainer = document.getElementById('chatbot-messages');
+            var userMessage = document.createElement('div');
+            userMessage.className = 'user-message';
+            userMessage.textContent = message;
+            messageContainer.appendChild(userMessage);
+            console.log('Sending message to server:', message);
+            fetch('http://127.0.0.1:5000/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: message })
+            })
+            .then(response => {
+                console.log('Received response:', response);
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Response data:', data);
+                const botMessage = document.createElement('div');
+                botMessage.className = 'bot-message';
+                botMessage.textContent = 'Bot: ' + data.response;
+                messageContainer.appendChild(botMessage);
+                messageContainer.scrollTop = messageContainer.scrollHeight; // Scroll to the bottom
+            })
+            .catch(error => {
+                console.error('There was a problem with the fetch operation:', error);
+                const errorMessage = document.createElement('div');
+                errorMessage.className = 'error-message';
+                errorMessage.textContent = 'Error: Could not connect to the chatbot server.';
+                messageContainer.appendChild(errorMessage);
+            });
+
+            input.value = '';
+        }
+    }
+
         document.addEventListener('DOMContentLoaded', function() {
             var starContainers = document.getElementsByClassName('stars');
             Array.prototype.forEach.call(starContainers, function(starContainer) {

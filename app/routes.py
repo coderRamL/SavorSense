@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session, flash, Flask
+from flask import Blueprint, render_template, request, redirect, url_for, session, flash, Flask, jsonify
 from sqlalchemy import create_engine, Column, Integer, String, Table, MetaData
 from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime
@@ -7,6 +7,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
 import json
+from app.models import generate_response
 
 # import secrets
 # secret_key = secrets.token_hex(16)  # Generates a 32-character hexadecimal key
@@ -357,3 +358,13 @@ def allergies():
 @main.route('/forget')
 def forget():
     return render_template('forget.html')
+
+@app.route('/chat', methods=['POST'])
+def chat():
+    data = request.json
+    user_message = data.get('message')
+    if not user_message:
+        return jsonify({'response': 'Please enter a message.'})
+    
+    bot_response = generate_response(user_message)
+    return jsonify({'response': bot_response})
