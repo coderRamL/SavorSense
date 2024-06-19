@@ -14,6 +14,15 @@ food_recommendations = {
     # Add more categories and food items as needed
 }
 
+GREETING_INPUTS = ("hello", "hi", "greetings", "sup", "what's up","hey", "hola", "bonjour", "nihao")
+GREETING_RESPONSES = ["hi", "hey", "*nods*", "hi there", "hello", "I am glad! You are talking to me"]
+
+def greeting(sentence):
+    """If user's input is a greeting, return a greeting response"""
+    for word in sentence:
+        if word.lower() in GREETING_INPUTS:
+            return random.choice(GREETING_RESPONSES)
+    return None
 # Preprocess input text
 def preprocess_text(text):
     stop_words = set(stopwords.words('english'))
@@ -24,6 +33,9 @@ def preprocess_text(text):
 # Generate a response based on user input
 def generate_response(user_input):
     processed_input = preprocess_text(user_input)
+    if greeting(processed_input) != None:
+        return greeting(processed_input)
+    
     for category in food_recommendations:
         if category in processed_input:
             return random.choice(food_recommendations[category])
