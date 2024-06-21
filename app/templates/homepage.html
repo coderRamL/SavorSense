@@ -301,11 +301,33 @@
             chatbotContainer.classList.toggle('active');
         });
 
+        document.getElementById('chatbot-input').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
         // Function to send a message to the chatbot
         function sendMessage() {
         var input = document.getElementById('chatbot-input');
         var message = input.value.trim();
         if (message) {
+            var cards = document.getElementsByClassName('restaurant-card');
+        for (var i = 0; i < cards.length; i++) {
+            var card = cards[i];
+            var name = card.getAttribute('data-name').toLowerCase();
+            var cuisine = card.getAttribute('data-cuisine').toLowerCase();
+            var rating = card.getAttribute('data-rating').toLowerCase();
+            var description = card.getAttribute('data-description').toLowerCase();
+            console.log("name: ", name)
+            console.log("msg: ", message)
+            if (message.toLowerCase().includes(name) || message.toLowerCase().includes(cuisine) || message.toLowerCase().includes(rating) || message.toLowerCase().includes(description)) {
+                card.classList.remove('hidden');
+            }
+            else {
+                card.classList.add('hidden');
+            }
+        }
             var messageContainer = document.getElementById('chatbot-messages');
             var userMessage = document.createElement('div');
             userMessage.className = 'user-message';
@@ -339,7 +361,6 @@
                 errorMessage.textContent = 'Error: Could not connect to the chatbot server.';
                 messageContainer.appendChild(errorMessage);
             });
-
             input.value = '';
         }
     }
