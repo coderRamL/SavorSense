@@ -26,7 +26,44 @@ def greeting(sentence):
     for word in sentence:
         if word.lower() in GREETING_INPUTS:
             return random.choice(GREETING_RESPONSES)
-    return GREETING_RESPONSES
+    return None
+
+def connect_db():
+    database_url = "postgresql://SavorSense_owner:iX2EMY6TzLlf@ep-shrill-cloud-a40et0x7.us-east-1.aws.neon.tech/SavorSense?sslmode=require"
+    conn = psycopg2.connect(database_url)
+    return conn 
+
+def get_restaurant_recommendations(cuisine_type):
+    conn = connect_db()
+    cur = conn.cursor()
+    query = sql.SQL("SELECT name FROM restaurants WHERE cuisine = %s ORDER BY rating DESC, num_reviews DESC LIMIT 5")
+    cur.execute(query, [cuisine_type])
+    results = cur.fetchall()
+    print(f"Restaurant results: {results}")
+    cur.close()
+    conn.close()
+    return [result[0] for result in results]
+
+def get_restaurants_by_rating(min_rating):
+    conn = connect_db()
+    cur = conn.cursor()
+    query = sql.SQL("SELECT name FROM restaurants WHERE rating >= %s ORDER BY rating DESC LIMIT 5")
+    cur.execute(query, [min_rating])
+    results = cur.fetchall()
+    cur.close()
+    conn.close()
+    return [result[0] for result in results]
+
+def get_restaurants_by_price(price_range):
+    conn = connect_db()
+    cur = conn.cursor()
+    query = sql.SQL("SELECT name FROM restaurants WHERE low_price <= %s and high_price >= %s ORDER BY rating DESC LIMIT 5")
+    cur.execute(query, [price_range, price_range])
+    results = cur.fetchall()
+    cur.close()
+    conn.close()
+    return [result[0] for result in results]
+
 # Preprocess input text
 def preprocess_text(text):
     stop_words = set(stopwords.words('english'))
@@ -40,10 +77,44 @@ def generate_response(user_input):
     if greeting(processed_input) != None:
         return greeting(processed_input)
     
-    for category in food_recommendations:
-        if category in processed_input:
-            return random.choice(food_recommendations[category])
-    return "I'm not sure what you would like. Can you specify a dietary preference?"
+    cuisine_types = ["Italian", "Mexican", "Japanese", "Indian", "Thai", "Chinese", "French", "Mediterranean", "Middle Eastern", "American", "Korean", "Vietnamese", "Burmese", "German", "Other"]
+    
+    for cuisine in cuisine_types:
+        if cuisine.lower() in processed_input:
+            restaurant_names = get_restaurant_recommendations(cuisine)
+            if restaurant_names:
+                return f"Here are some {cuisine} restaurants you might like: {', '.join(restaurant_names)}"
+            else:
+                return f"Sorry, I couldn't find any restaurants that match your preference. Is there anything else I can help you with?"
+            
+    if 'rating' in processed_input:
+        for word in processed_input:
+            try:
+                rating = float(word)
+                if 0 <= rating <= 5:
+                    restaurant_names = get_restaurants_by_rating(rating)
+                    if restaurant_names:
+                        return f"Here are some restaurants with a rating of {rating} or higher: {', '.join(restaurant_names)}"
+                    else:
+                        return f"Sorry, I couldn't find any restaurants with a rating of {rating} or higher. Is there anything else I can help you with?"
+            except ValueError:
+                continue
+    
+    if 'price' in processed_input:
+        for word in processed_input:
+            try:
+                price = float(word)
+                print(f"price: {price}")
+                if 0 <= price:
+                    restaurant_names = get_restaurants_by_price(price)
+                    if restaurant_names:
+                        return f"Here are some restaurants that fit your price range: {', '.join(restaurant_names)}"
+                    else:
+                        return f"Sorry, I couldn't find any restaurants with your price range. Is there anything else I can help you with?"
+            except ValueError:
+                continue
+
+    return "I'm not sure what you would like. Can you specify a cuisine preference?"
 
 def extract_data():
     # Database URL
