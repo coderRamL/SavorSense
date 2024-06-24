@@ -4,7 +4,9 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 # from nltk.stem import WordNetLemmatizer
 import psycopg2
+import re
 from psycopg2 import sql
+from datetime import datetime
 
 nltk.download('punkt')
 nltk.download('stopwords')
@@ -64,6 +66,50 @@ def get_restaurants_by_price(price_range):
     conn.close()
     return [result[0] for result in results]
 
+def get_restaurants_by_reviews(min_reviews):
+    conn = connect_db()
+    cur = conn.cursor()
+    query = sql.SQL("SELECT name FROM restaurants WHERE num_reviews >= %s ORDER BY num_reviews DESC, rating DESC LIMIT 5")
+    cur.execute(query, [min_reviews])
+    results = cur.fetchall()
+    cur.close()
+    conn.close()
+    return [result[0] for result in results]
+
+def get_restaurants_by_hours(day, time):
+    conn = connect_db()
+    cur = conn.cursor()
+    query = sql.SQL(f"SELECT name FROM restaurants WHERE start_hour_{day} <= %s AND end_hour_{day} >= %s ORDER BY rating DESC LIMIT 5")
+    cur.execute(query, [time, time])
+    results = cur.fetchall()
+    cur.close()
+    conn.close()
+    return [result[0] for result in results]
+
+def parse_time(word):
+    """
+    Try to parse the time in 12-hour format with AM/PM.
+    Return the time object.
+    """
+    try:
+        # Try 12-hour format with AM/PM
+        return datetime.strptime(word, "%I:%M %p").time()
+    except ValueError:
+        return None
+
+def extract_time_phrase(input_text):
+    """
+    Extract the time phrase from the user input.
+    """
+    match = re.search(r'\b\d{1,2}:\d{2}\s?(AM|PM|am|pm)\b', input_text, re.IGNORECASE)
+    if match:
+        return match.group(0)
+    return None
+
+def get_current_time():
+    now = datetime.now()
+    return now.strftime("%I:%M %p"), now.strftime("%H:%M")
+
 # Preprocess input text
 def preprocess_text(text):
     stop_words = set(stopwords.words('english'))
@@ -78,6 +124,7 @@ def generate_response(user_input):
         return greeting(processed_input)
     
     cuisine_types = ["Italian", "Mexican", "Japanese", "Indian", "Thai", "Chinese", "French", "Mediterranean", "Middle Eastern", "American", "Korean", "Vietnamese", "Burmese", "German", "Other"]
+    days_of_week = ["monday", "tues", "wed", "thurs", "fri", "sat", "sun"]
     
     for cuisine in cuisine_types:
         if cuisine.lower() in processed_input:
@@ -100,7 +147,7 @@ def generate_response(user_input):
             except ValueError:
                 continue
     
-    if 'price' in processed_input:
+    if 'price' in processed_input or '$' in processed_input:
         for word in processed_input:
             try:
                 price = float(word)
@@ -113,8 +160,84 @@ def generate_response(user_input):
                         return f"Sorry, I couldn't find any restaurants with your price range. Is there anything else I can help you with?"
             except ValueError:
                 continue
+        
+    if 'reviews' in processed_input or 'review' in processed_input:
+        for word in processed_input:
+            try:
+                min_reviews = int(word)
+                if min_reviews >= 0:
+                    restaurant_names = get_restaurants_by_reviews(min_reviews)
+                    if restaurant_names:
+                        return f"Here are some restaurants with {min_reviews} or more reviews: {', '.join(restaurant_names)}"
+                    else:
+                        return f"Sorry, I couldn't find any restaurants with {min_reviews} or more reviews. Is there anything else I can help you with?"
+            except ValueError:
+                continue
+    
+    for day in days_of_week:
+        if day in processed_input or 'tuesday' in processed_input or 'wednesday' in processed_input or 'thursday' in processed_input or 'friday' in processed_input or 'saturday' in processed_input or 'sunday' in processed_input:
+            print("In Loop")
+            if 'tuesday' in processed_input:
+                day = 'tues'
+            elif 'wednesday' in processed_input:
+                day = 'wed'
+            elif 'thursday' in processed_input:
+                day = 'thurs'
+            elif 'friday' in processed_input:
+                day = 'fri'
+            elif 'saturday' in processed_input:
+                day = 'sat'
+            elif 'sunday' in processed_input:
+                day = 'sun'
+            time_phrase = extract_time_phrase(user_input)
+            if time_phrase:
+                time = parse_time(time_phrase)
+                if time:
+                    print(f"Time: {time}")
+                    time_24_hour = time.strftime("%H:%M") 
+                    print(f"24 hour: {time_24_hour}") 
+                    time_12_hour = time.strftime("%I:%M %p")
+                    print(f"12 hour: {time_12_hour}") 
+                    restaurant_names = get_restaurants_by_hours(day, time_24_hour)
+                    if day == 'tues':
+                        day = 'tuesday'
+                    elif day == 'wed':
+                        day = 'wednesday'
+                    elif day == 'thurs':
+                        day = 'thursday'
+                    elif day == 'fri':
+                        day = 'friday'
+                    elif day == 'sat':
+                        day = 'saturday'
+                    elif day == 'sun':
+                        day = 'sunday'
+                    if restaurant_names:
+                        return f"Here are some restaurants open on {day.capitalize()} at {time_12_hour}: {', '.join(restaurant_names)}"
+                    else:
+                        return f"Sorry, I couldn't find any restaurants open on {day.capitalize()} at {time_12_hour}. Is there anything else I can help you with?"
+        elif 'current time' in user_input.lower() or 'now' in user_input.lower() or 'currently' in user_input.lower() or 'right now' in user_input.lower() or 'rn' in user_input.lower() or 'right this minute' in user_input.lower() or 'right this second' in user_input.lower():
+            time_12_hour, time_24_hour = get_current_time()
+            current_day = datetime.now().strftime("%A").lower()
+            print(f"current_day: {current_day}")
+            if current_day == 'tuesday':
+                current_day = 'tues'
+            elif current_day == 'wednesday':
+                current_day = 'wed'
+            elif current_day == 'thursday':
+                current_day = 'thurs'
+            elif current_day == 'friday':
+                current_day = 'fri'
+            elif current_day == 'saturday':
+                current_day = 'sat'
+            elif current_day == 'sunday':
+                current_day = 'sun'
+            restaurant_names = get_restaurants_by_hours(current_day, time_24_hour)
+            if restaurant_names:
+                return f"Here are some restaurants open today at {time_12_hour}: {', '.join(restaurant_names)}"
+            else:
+                return f"Sorry, I couldn't find any restaurants open today at {time_12_hour}."
 
-    return "I'm not sure what you would like. Can you specify a cuisine preference?"
+    return "I'm not sure what you would like. Can you be more specific?"
 
 def extract_data():
     # Database URL
