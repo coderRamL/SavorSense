@@ -7,7 +7,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
 import json
-from app.models import generate_response, get_restaurants_menus, train_menu_model
+from app.models import generate_response, get_restaurants_menus, train_menu_model, get_db
 import nltk
 
 nltk.download('punkt')
