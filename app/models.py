@@ -2,15 +2,17 @@ import random
 import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
-# from nltk.stem import WordNetLemmatizer
+from nltk.probability import FreqDist
 import psycopg2
 import re
 from psycopg2 import sql
+from sqlalchemy import create_engine, Column, String
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 from datetime import datetime
 
 nltk.download('punkt')
 nltk.download('stopwords')
-# nltk.download('wordnet')
 
 food_recommendations = {
     'vegetarian': ['Vegetable Stir Fry', 'Veggie Burger', 'Pasta Primavera'],
@@ -110,12 +112,31 @@ def get_current_time():
     now = datetime.now()
     return now.strftime("%I:%M %p"), now.strftime("%H:%M")
 
+def get_restaurants_menus():
+    conn = connect_db()
+    cur = conn.cursor()
+    query = sql.SQL("SELECT menu FROM restaurants")
+    cur.execute(query)
+    results = cur.fetchall()
+    cur.close()
+    conn.close()
+    return [result[0] for result in results]
+
 # Preprocess input text
 def preprocess_text(text):
     stop_words = set(stopwords.words('english'))
     word_tokens = word_tokenize(text)
     filtered_text = [w.lower() for w in word_tokens if not w in stop_words]
     return filtered_text
+
+# Train NLTK model using menu data
+def train_menu_model(menus):
+    all_words = []
+    for menu in menus:
+        tokens = preprocess_text(menu)
+        all_words.extend(tokens)
+    freq_dist = FreqDist(all_words)
+    return freq_dist
 
 # Generate a response based on user input
 def generate_response(user_input):
@@ -133,6 +154,11 @@ def generate_response(user_input):
                 return f"Here are some {cuisine} restaurants you might like: {', '.join(restaurant_names)}"
             else:
                 return f"Sorry, I couldn't find any restaurants that match your preference. Is there anything else I can help you with?"
+            
+    # Example: Using frequency distribution to enhance response
+    common_words = [word for word in processed_input if word in freq_dist]
+    if common_words:
+        return f"I see you're interested in {', '.join(common_words)}. Here are some recommendations: {random.choice(food_recommendations.get('vegetarian', []))}"
             
     if 'rating' in processed_input:
         for word in processed_input:
@@ -239,59 +265,10 @@ def generate_response(user_input):
 
     return "I'm not sure what you would like. Can you be more specific?"
 
-def extract_data():
-    # Database URL
-    database_url = "postgresql://SavorSense_owner:iX2EMY6TzLlf@ep-shrill-cloud-a40et0x7.us-east-1.aws.neon.tech/SavorSense?sslmode=require"
-
-    # Create a connection to the database
-    conn = psycopg2.connect(database_url)
-
-    # Create a cursor object
-    cur = conn.cursor()
-
-    # SQL query
-    query = sql.SQL("SELECT * FROM {}").format(sql.Identifier('restaurants'))
-
-    # Execute the query
-    cur.execute(query)
-
-    # Fetch all the rows
-    rows = cur.fetchall()
-
-    for row in rows:
-        print(row)
-
-    # Close the cursor and connection
-    cur.close()
-    conn.close()
-
-# def preprocess_data():
-#     rows = [row[0] for row in rows]
-
-#     # Initialize the lemmatizer
-#     lemmatizer = WordNetLemmatizer()
-
-#     preprocessed_rows = []
-
-#     for row in rows:
-#         row = str(row)
-#         # Tokenize the text
-#         tokens = word_tokenize(row)
-
-#         # Remove non-alphabetic tokens and convert to lower case
-#         words = [token.lower() for token in tokens if token.isalpha()]
-
-#         # Remove stop words
-#         stop_words = set(stopwords.words('english'))
-#         words = [word for word in words if word not in stop_words]
-
-#         # Lemmatize the words
-#         words = [lemmatizer.lemmatize(word) for word in words]
-
-#         preprocessed_rows.append(words)
-
 # Example usage
 if __name__ == "__main__":
+    menus = get_restaurants_menus()
+    freq_dist = train_menu_model(menus)
     user_input = input("Ask me for a food recommendation: ")
-    response = generate_response(user_input)
+    response = generate_response(user_input, freq_dist)
     print(response)

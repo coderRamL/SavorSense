@@ -7,7 +7,11 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
 import json
-from app.models import generate_response
+from app.models import generate_response, get_restaurants_menus, train_menu_model, get_db
+import nltk
+
+nltk.download('punkt')
+from nltk.tokenize import word_tokenize
 
 # import secrets
 # secret_key = secrets.token_hex(16)  # Generates a 32-character hexadecimal key
@@ -15,6 +19,8 @@ from app.models import generate_response
 #app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'default_secret_key')  # Set a secret key for flash messages
 
 main = Blueprint('main', __name__)
+
+restaurant_freq_dist = None
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'default_secret_key')  # Set a secret key for flash messages
@@ -359,12 +365,51 @@ def allergies():
 def forget():
     return render_template('forget.html')
 
+# @main.route('/chat', methods=['POST'])
+# def chat():
+#     data = request.json
+#     user_message = data.get('message')
+#     if not user_message:
+#         return jsonify({'response': 'Please enter a message.'})
+    
+#     bot_response = generate_response(user_message)
+#     return jsonify({'response': bot_response})
+
+@main.route("/process-menus", methods=["GET"], endpoint='process_menus')
+def process_menus():
+    db = next(get_db())
+    menus = get_restaurants_menus(db)
+    processed_menus = [word_tokenize(menu[0]) for menu in menus if menu and menu[0]]
+    db.close()
+    return jsonify({"processed_menus": processed_menus})
+
+def chatbot_response(user_input, processed_menus):
+    user_tokens = word_tokenize(user_input)
+    response = "I couldn't find what you're looking for."
+    for menu_tokens in processed_menus:
+        if any(token in menu_tokens for token in user_tokens):
+            response = "I found something that might interest you in our menus!"
+        else:
+            response = "I couldn't find anything that interests you in our menus."
+    return response
+
+def generate_response(user_message, processed_menus):
+    return chatbot_response(user_message, processed_menus)
+
 @main.route('/chat', methods=['POST'])
 def chat():
     data = request.json
     user_message = data.get('message')
     if not user_message:
         return jsonify({'response': 'Please enter a message.'})
-    
-    bot_response = generate_response(user_message)
+
+    # Fetch menus and train the model
+    menus = get_restaurants_menus()
+    freq_dist = train_menu_model(menus)
+
+    bot_response = generate_response(user_message, freq_dist)
     return jsonify({'response': bot_response})
+
+@main.route("/", methods=["GET"])
+def read_root():
+    return jsonify({"message": "Welcome to the chatbot with NLTK processing!"})
