@@ -9,7 +9,7 @@ from psycopg2 import sql
 from sqlalchemy import create_engine, Column, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from datetime import datetime
+from datetime import datetime, timedelta
 
 nltk.download('punkt')
 nltk.download('stopwords')
@@ -108,9 +108,31 @@ def extract_time_phrase(input_text):
         return match.group(0)
     return None
 
+def extract_offset_phrase(input_text):
+    match = re.search(r'\b(\d+)\s?(minutes?|hours?|days?)\s?\b', input_text, re.IGNORECASE)
+    if match:
+        return int(match.group(1)), match.group(2).lower()
+    return None, None
+
+def calculate_future_time(offset_value, offset_unit):
+    now = datetime.now()
+    if offset_unit.startswith('minute'):
+        future_time = now + timedelta(minutes=offset_value)
+    elif offset_unit.startswith('hour'):
+        future_time = now + timedelta(hours=offset_value)
+    elif offset_unit.startswith('day'):
+        future_time = now + timedelta(days=offset_value)
+    else:
+        future_time = now
+    return future_time
+
 def get_current_time():
     now = datetime.now()
     return now.strftime("%I:%M %p"), now.strftime("%H:%M")
+
+def get_current_day_and_time():
+    now = datetime.now()
+    return now.strftime("%A").lower(), now.strftime("%H:%M"), now.strftime("%I:%M %p")
 
 def get_restaurants_menus():
     conn = connect_db()
@@ -153,12 +175,7 @@ def generate_response(user_input):
             if restaurant_names:
                 return f"Here are some {cuisine} restaurants you might like: {', '.join(restaurant_names)}"
             else:
-                return f"Sorry, I couldn't find any restaurants that match your preference. Is there anything else I can help you with?"
-            
-    # Example: Using frequency distribution to enhance response
-    common_words = [word for word in processed_input if word in freq_dist]
-    if common_words:
-        return f"I see you're interested in {', '.join(common_words)}. Here are some recommendations: {random.choice(food_recommendations.get('vegetarian', []))}"
+                return f"Sorry, I couldn't find any restaurants that match your preference. Is there anything else I can help you with?"           
             
     if 'rating' in processed_input:
         for word in processed_input:
@@ -262,6 +279,42 @@ def generate_response(user_input):
                 return f"Here are some restaurants open today at {time_12_hour}: {', '.join(restaurant_names)}"
             else:
                 return f"Sorry, I couldn't find any restaurants open today at {time_12_hour}."
+            
+        offset_value, offset_unit = extract_offset_phrase(user_input)
+        if offset_value and offset_unit:
+            future_time = calculate_future_time(offset_value, offset_unit)
+            future_day = future_time.strftime("%A").lower()
+            if future_day == 'tuesday':
+                future_day = 'tues'
+            elif future_day == 'wednesday':
+                future_day = 'wed'
+            elif future_day == 'thursday':
+                future_day = 'thurs'
+            elif future_day == 'friday':
+                future_day = 'fri'
+            elif future_day == 'saturday':
+                future_day = 'sat'
+            elif future_day == 'sunday':
+                future_day = 'sun' 
+            future_time_24_hour = future_time.strftime("%H:%M")
+            future_time_12_hour = future_time.strftime("%I:%M %p")
+            restaurant_names = get_restaurants_by_hours(future_day, future_time_24_hour)
+            if future_day == 'tues':
+                future_day = 'tuesday'
+            elif future_day == 'wed':
+                future_day = 'wednesday'
+            elif future_day == 'thurs':
+                future_day = 'thursday'
+            elif future_day == 'fri':
+                future_day = 'friday'
+            elif future_day == 'sat':
+                future_day = 'saturday'
+            elif future_day == 'sun':
+                future_day = 'sunday'
+            if restaurant_names:
+                return f"Here are some restaurants open on {future_day.capitalize()} at {future_time_12_hour}: {', '.join(restaurant_names)}"
+            else:
+                return f"Sorry, I couldn't find any restaurants open on {future_day.capitalize()} at {future_time_12_hour}."
 
     return "I'm not sure what you would like. Can you be more specific?"
 
