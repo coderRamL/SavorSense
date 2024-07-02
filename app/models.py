@@ -10,6 +10,8 @@ from sqlalchemy import create_engine, Column, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime, timedelta
+import requests
+from bs4 import BeautifulSoup
 
 nltk.download('punkt')
 nltk.download('stopwords')
@@ -137,12 +139,50 @@ def get_current_day_and_time():
 def get_restaurants_menus():
     conn = connect_db()
     cur = conn.cursor()
-    query = sql.SQL("SELECT menu FROM restaurants")
+    query = sql.SQL("SELECT name, menu FROM restaurants")
     cur.execute(query)
     results = cur.fetchall()
     cur.close()
     conn.close()
-    return [result[0] for result in results]
+    return results
+
+def process_menu(menu_link):
+    if not menu_link.startswith("http://") and not menu_link.startswith("https://"):
+        print(f"Invalid URL: {menu_link}")
+        return []
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
+    try:
+        response = requests.get(menu_link, headers=headers)
+        response.raise_for_status()  # Raise HTTPError for bad responses (4xx and 5xx)
+        soup = BeautifulSoup(response.content, 'lxml')
+        menu_items = []
+        for item in soup.find_all('li', class_='menu-item'):
+            menu_items.append(item.get_text(strip=True))
+        
+        return menu_items
+    except requests.exceptions.RequestException as e:
+        print(f"Failed to fetch menu from {menu_link}: {e}")
+        return []
+
+def build_menu_database():
+    restaurants = get_restaurants_menus()
+    menu_database = {}
+    for name, menu in restaurants:
+        menu_items = process_menu(menu)
+        menu_database[name] = menu_items
+    return menu_database
+
+menu_database = build_menu_database()
+
+def search_menu(item, menu_database):
+    results = []
+    for restaurant, menu in menu_database.items():
+        for menu_item in menu:
+            if item.lower() in menu_item.lower():
+                results.append((restaurant, menu_item))
+    return results
 
 # Preprocess input text
 def preprocess_text(text):
@@ -315,8 +355,16 @@ def generate_response(user_input):
                 return f"Here are some restaurants open on {future_day.capitalize()} at {future_time_12_hour}: {', '.join(restaurant_names)}"
             else:
                 return f"Sorry, I couldn't find any restaurants open on {future_day.capitalize()} at {future_time_12_hour}."
+    
+    for word in processed_input:
+        search_results = search_menu(word, menu_database)
+        if search_results:
+            response = "Here are some options you might like:\n"
+            for restaurant, menu_item in search_results:
+                response += f"{menu_item} at {restaurant}\n"
+            return response.strip()
 
-    return "I'm not sure what you would like. Can you be more specific?"
+    return "I'm not sure what you would like. Can you be more specific? Make sure everything is spelled properly."
 
 # Example usage
 if __name__ == "__main__":
