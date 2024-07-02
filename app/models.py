@@ -105,13 +105,13 @@ def extract_time_phrase(input_text):
     """
     Extract the time phrase from the user input.
     """
-    match = re.search(r'\b\d{1,2}:\d{2}\s?(AM|PM|am|pm)\b', input_text, re.IGNORECASE)
+    match = re.search(r'\b\d{1,2}:\d{0,2}\s?(AM|PM|am|pm|Am|Pm|aM|pM|a|A|p|P)\b', input_text, re.IGNORECASE)
     if match:
         return match.group(0)
     return None
 
 def extract_offset_phrase(input_text):
-    match = re.search(r'\b(\d+)\s?(minutes?|hours?|days?)\s?\b', input_text, re.IGNORECASE)
+    match = re.search(r'\b(\d+)\s?(minutes?|hours?|days?|min?|hr?|hrs?|day?|minute?|hour?)\s?\b', input_text, re.IGNORECASE)
     if match:
         return int(match.group(1)), match.group(2).lower()
     return None, None
@@ -258,13 +258,15 @@ def generate_response(user_input):
                 continue
     
     for day in days_of_week:
-        if day in processed_input or 'tuesday' in processed_input or 'wednesday' in processed_input or 'thursday' in processed_input or 'friday' in processed_input or 'saturday' in processed_input or 'sunday' in processed_input:
+        if day in processed_input or 'mon' in processed_input or 'tuesday' in processed_input or 'tue' in processed_input or 'wednesday' in processed_input or 'wednes' in processed_input or 'thursday' in processed_input or 'thur' in processed_input or 'thu' in processed_input or 'friday' in processed_input or 'saturday' in processed_input or 'sunday' in processed_input:
             print("In Loop")
-            if 'tuesday' in processed_input:
+            if 'mon' in processed_input:
+                day = 'monday'
+            elif 'tuesday' or 'tue' in processed_input:
                 day = 'tues'
-            elif 'wednesday' in processed_input:
+            elif 'wednesday' or 'wednes' in processed_input:
                 day = 'wed'
-            elif 'thursday' in processed_input:
+            elif 'thursday' or 'thu' or 'thur' in processed_input:
                 day = 'thurs'
             elif 'friday' in processed_input:
                 day = 'fri'
@@ -282,7 +284,9 @@ def generate_response(user_input):
                     time_12_hour = time.strftime("%I:%M %p")
                     print(f"12 hour: {time_12_hour}") 
                     restaurant_names = get_restaurants_by_hours(day, time_24_hour)
-                    if day == 'tues':
+                    if day == 'monday':
+                        day == 'monday'
+                    elif day == 'tues':
                         day = 'tuesday'
                     elif day == 'wed':
                         day = 'wednesday'
@@ -298,7 +302,7 @@ def generate_response(user_input):
                         return f"Here are some restaurants open on {day.capitalize()} at {time_12_hour}: {', '.join(restaurant_names)}"
                     else:
                         return f"Sorry, I couldn't find any restaurants open on {day.capitalize()} at {time_12_hour}. Is there anything else I can help you with?"
-        elif 'current time' in user_input.lower() or 'now' in user_input.lower() or 'currently' in user_input.lower() or 'right now' in user_input.lower() or 'rn' in user_input.lower() or 'right this minute' in user_input.lower() or 'right this second' in user_input.lower():
+        elif 'current time' in user_input.lower() or 'now' in user_input.lower() or 'currently' in user_input.lower() or 'right now' in user_input.lower() or 'rn' in user_input.lower() or 'right this minute' in user_input.lower() or 'right this second' in user_input.lower() or 'current' in user_input.lower() or 'this moment' in user_input.lower():
             time_12_hour, time_24_hour = get_current_time()
             current_day = datetime.now().strftime("%A").lower()
             print(f"current_day: {current_day}")
