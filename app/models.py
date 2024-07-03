@@ -146,35 +146,79 @@ def get_restaurants_menus():
     conn.close()
     return results
 
-def process_menu(menu_link):
+def fetch_menu_html(menu_link):
     if not menu_link.startswith("http://") and not menu_link.startswith("https://"):
         print(f"Invalid URL: {menu_link}")
         return []
+    
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
     }
     try:
         response = requests.get(menu_link, headers=headers)
-        response.raise_for_status()  # Raise HTTPError for bad responses (4xx and 5xx)
-        soup = BeautifulSoup(response.content, 'lxml')
-        menu_items = []
-        for item in soup.find_all('li', class_='menu-item'):
-            menu_items.append(item.get_text(strip=True))
-        
-        return menu_items
+        response.raise_for_status()
+        if response.status_code == 200:
+            return response.content
+        else:
+            print(f"Failed to fetch menu from {menu_link}: {response.status_code} {response.reason}")
+            return None
     except requests.exceptions.RequestException as e:
         print(f"Failed to fetch menu from {menu_link}: {e}")
-        return []
+        return None
+
+def process_menu(html_content):
+    if not html_content:
+        return None
+    
+    soup = BeautifulSoup(html_content, 'html.parser')
+    
+    # Extract all text content from the HTML
+    text_content = soup.get_text()
+    
+    # Example: Filter menu-related information
+    keywords = ['menu', 'item', 'price', 'description']
+    filtered_text = filter_menu_content(text_content, keywords)
+    
+    return filtered_text
+
+def filter_menu_content(text, keywords):
+    # Example: Simple keyword matching
+    lines = text.split('\n')
+    menu_lines = []
+    
+    for line in lines:
+        if any(keyword in line.lower() for keyword in keywords):
+            menu_lines.append(line.strip())
+    
+    return '\n'.join(menu_lines)
+
+def print_menu_html_for_restaurant(restaurant_name, menu_link):
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
+    try:
+        response = requests.get(menu_link, headers=headers)
+        response.raise_for_status()
+        print(response.text)
+    except requests.exceptions.RequestException as e:
+        print(f"Failed to fetch menu from {menu_link}: {e}")
+
+menu_url = 'http://www.tacobell.com/food'
+html_content = fetch_menu_html(menu_url)
+if html_content:
+    preprocessed_menu = process_menu(html_content)
+    print(preprocessed_menu)
 
 def build_menu_database():
     restaurants = get_restaurants_menus()
     menu_database = {}
-    for name, menu in restaurants:
-        menu_items = process_menu(menu)
+    for name in restaurants:
+        menu_items = process_menu(html_content)
         menu_database[name] = menu_items
     return menu_database
 
 menu_database = build_menu_database()
+
 
 def search_menu(item, menu_database):
     results = []
