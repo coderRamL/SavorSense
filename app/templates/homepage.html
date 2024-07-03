@@ -309,61 +309,77 @@
 
         // Function to send a message to the chatbot
         function sendMessage() {
-        var input = document.getElementById('chatbot-input');
-        var message = input.value.trim();
-        if (message) {
-            var cards = document.getElementsByClassName('restaurant-card');
-        for (var i = 0; i < cards.length; i++) {
-            var card = cards[i];
-            var name = card.getAttribute('data-name').toLowerCase();
-            var cuisine = card.getAttribute('data-cuisine').toLowerCase();
-            var rating = card.getAttribute('data-rating').toLowerCase();
-            var description = card.getAttribute('data-description').toLowerCase();
-            console.log("name: ", name)
-            console.log("msg: ", message)
-            if (message.toLowerCase().includes(name) || message.toLowerCase().includes(cuisine) || message.toLowerCase().includes(rating) || message.toLowerCase().includes(description)) {
-                card.classList.remove('hidden');
-            }
-            else {
-                card.classList.add('hidden');
+            var input = document.getElementById('chatbot-input');
+            var message = input.value.trim();
+
+            if (message) {
+                var messageContainer = document.getElementById('chatbot-messages');
+
+                // Display user's message
+                var userMessage = document.createElement('div');
+                userMessage.className = 'user-message';
+                userMessage.textContent = message;
+                messageContainer.appendChild(userMessage);
+
+                console.log('Sending message to server:', message);
+
+                fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: message })
+                })
+                .then(response => {
+                    console.log('Received response:', response);
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Response data:', data);
+
+                    // Display chatbot's response
+                    const botMessage = document.createElement('div');
+                    botMessage.className = 'bot-message';
+                    botMessage.textContent = 'Bot: ' + data.response;
+                    messageContainer.appendChild(botMessage);
+                    messageContainer.scrollTop = messageContainer.scrollHeight; // Scroll to the bottom
+
+                    // Filter the restaurant cards based on user's message and chatbot's response
+                    var responseText = data.response.toLowerCase();
+                    var cards = document.getElementsByClassName('restaurant-card');
+                    for (var i = 0; i < cards.length; i++) {
+                        var card = cards[i];
+                        var name = card.getAttribute('data-name').toLowerCase();
+                        var cuisine = card.getAttribute('data-cuisine').toLowerCase();
+                        var rating = card.getAttribute('data-rating').toLowerCase();
+                        var description = card.getAttribute('data-description').toLowerCase();
+
+                        if (message.toLowerCase().includes(name) || 
+                            message.toLowerCase().includes(cuisine) || 
+                            message.toLowerCase().includes(rating) || 
+                            message.toLowerCase().includes(description) || 
+                            responseText.includes(name) || 
+                            responseText.includes(cuisine) || 
+                            responseText.includes(rating) || 
+                            responseText.includes(description)) {
+                            card.classList.remove('hidden');
+                        } else {
+                            card.classList.add('hidden');
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('There was a problem with the fetch operation:', error);
+                    const errorMessage = document.createElement('div');
+                    errorMessage.className = 'error-message';
+                    errorMessage.textContent = 'Error: Could not connect to the chatbot server.';
+                    messageContainer.appendChild(errorMessage);
+                });
+
+                input.value = '';
             }
         }
-            var messageContainer = document.getElementById('chatbot-messages');
-            var userMessage = document.createElement('div');
-            userMessage.className = 'user-message';
-            userMessage.textContent = message;
-            messageContainer.appendChild(userMessage);
-            console.log('Sending message to server:', message);
-            fetch('/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: message })
-            })
-            .then(response => {
-                console.log('Received response:', response);
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('Response data:', data);
-                const botMessage = document.createElement('div');
-                botMessage.className = 'bot-message';
-                botMessage.textContent = 'Bot: ' + data.response;
-                messageContainer.appendChild(botMessage);
-                messageContainer.scrollTop = messageContainer.scrollHeight; // Scroll to the bottom
-            })
-            .catch(error => {
-                console.error('There was a problem with the fetch operation:', error);
-                const errorMessage = document.createElement('div');
-                errorMessage.className = 'error-message';
-                errorMessage.textContent = 'Error: Could not connect to the chatbot server.';
-                messageContainer.appendChild(errorMessage);
-            });
-            input.value = '';
-        }
-    }
 
         document.addEventListener('DOMContentLoaded', function() {
             var starContainers = document.getElementsByClassName('stars');
