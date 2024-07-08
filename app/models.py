@@ -70,6 +70,26 @@ def get_restaurants_by_price(price_range):
     conn.close()
     return [result[0] for result in results]
 
+def get_restaurants_by_low_price(price_range):
+    conn = connect_db()
+    cur = conn.cursor()
+    query = sql.SQL("SELECT name FROM restaurants WHERE low_price < %s and high_price <= %s ORDER BY rating DESC LIMIT 5")
+    cur.execute(query, [price_range, price_range])
+    results = cur.fetchall()
+    cur.close()
+    conn.close()
+    return [result[0] for result in results]
+
+def get_restaurants_by_high_price(price_range):
+    conn = connect_db()
+    cur = conn.cursor()
+    query = sql.SQL("SELECT name FROM restaurants WHERE low_price >= %s and high_price > %s ORDER BY rating DESC LIMIT 5")
+    cur.execute(query, [price_range, price_range])
+    results = cur.fetchall()
+    cur.close()
+    conn.close()
+    return [result[0] for result in results]
+
 def get_restaurants_by_reviews(min_reviews):
     conn = connect_db()
     cur = conn.cursor()
@@ -184,11 +204,13 @@ def search_menu(item, menu_database):
                 results.append((restaurant, menu_item))
     return results
 
-# Preprocess input text
 def preprocess_text(text):
     stop_words = set(stopwords.words('english'))
+    # Remove 'under' and 'over' from the stop words list
+    custom_stop_words = stop_words - {'under', 'over', 'below', 'above'}
+
     word_tokens = word_tokenize(text)
-    filtered_text = [w.lower() for w in word_tokens if not w in stop_words]
+    filtered_text = [w.lower() for w in word_tokens if not w.lower() in custom_stop_words]
     return filtered_text
 
 # Train NLTK model using menu data
@@ -217,7 +239,7 @@ def generate_response(user_input):
             else:
                 return f"Sorry, I couldn't find any restaurants that match your preference. Is there anything else I can help you with?"           
             
-    if 'rating' in processed_input:
+    if 'rating' in processed_input or '':
         for word in processed_input:
             try:
                 rating = float(word)
@@ -230,19 +252,46 @@ def generate_response(user_input):
             except ValueError:
                 continue
     
-    if 'price' in processed_input or '$' in processed_input:
-        for word in processed_input:
-            try:
-                price = float(word)
-                print(f"price: {price}")
-                if 0 <= price:
-                    restaurant_names = get_restaurants_by_price(price)
-                    if restaurant_names:
-                        return f"Here are some restaurants that fit your price range: {', '.join(restaurant_names)}"
-                    else:
-                        return f"Sorry, I couldn't find any restaurants with your price range. Is there anything else I can help you with?"
-            except ValueError:
-                continue
+    if 'price' in processed_input or '$' in processed_input or 'pricing' in processed_input or 'range' in processed_input or 'under' in processed_input or 'below' in processed_input or 'cost' in processed_input or 'costing' in processed_input or 'amount' in processed_input or 'over' in processed_input or 'above' in processed_input:
+        if 'under' in processed_input or 'below' in processed_input:
+            for word in processed_input:
+                try:
+                    price = float(word)
+                    print(f"price: {price}")
+                    if 0 <= price:
+                        restaurant_names = get_restaurants_by_low_price(price)
+                        if restaurant_names:
+                            return f"Here are some restaurants that fit your price range: {', '.join(restaurant_names)}"
+                        else:
+                            return f"Sorry, I couldn't find any restaurants with your price range. Is there anything else I can help you with?"
+                except ValueError:
+                    continue
+        elif 'over' in processed_input or 'above' in processed_input:
+            for word in processed_input:
+                try:
+                    price = float(word)
+                    print(f"price: {price}")
+                    if 0 <= price:
+                        restaurant_names = get_restaurants_by_high_price(price)
+                        if restaurant_names:
+                            return f"Here are some restaurants that fit your price range: {', '.join(restaurant_names)}"
+                        else:
+                            return f"Sorry, I couldn't find any restaurants with your price range. Is there anything else I can help you with?"
+                except ValueError:
+                    continue
+        else:
+            for word in processed_input:
+                try:
+                    price = float(word)
+                    print(f"price: {price}")
+                    if 0 <= price:
+                        restaurant_names = get_restaurants_by_price(price)
+                        if restaurant_names:
+                            return f"Here are some restaurants that fit your price range: {', '.join(restaurant_names)}"
+                        else:
+                            return f"Sorry, I couldn't find any restaurants with your price range. Is there anything else I can help you with?"
+                except ValueError:
+                    continue
         
     if 'reviews' in processed_input or 'review' in processed_input:
         for word in processed_input:
