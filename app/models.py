@@ -90,14 +90,28 @@ def get_restaurants_by_hours(day, time):
     conn.close()
     return [result[0] for result in results]
 
-def parse_time(word):
+def get_restaurants_by_morning(day):
+    conn = connect_db()
+    cur = conn.cursor()
+    query = sql.SQL(f"SELECT name FROM restaurants WHERE start_hour_{day} <= 11:59:59 AND end_hour_{day} >= %s ORDER BY rating DESC LIMIT 5")
+    cur.execute(query)
+    results = cur.fetchall()
+    cur.close()
+    conn.close()
+    return [result[0] for result in results]
+
+def parse_time(time_phrase):
     """
     Try to parse the time in 12-hour format with AM/PM.
     Return the time object.
     """
     try:
-        # Try 12-hour format with AM/PM
-        return datetime.strptime(word, "%I:%M %p").time()
+        time_phrase = time_phrase.replace('.', '').replace(' ', '')
+        if ':' not in time_phrase and ('am' in time_phrase.lower() or 'pm' in time_phrase.lower()):
+            time_phrase = time_phrase.replace('am', ':00am').replace('pm', ':00pm')
+        if ':' not in time_phrase:
+            time_phrase += ':00'
+        return datetime.strptime(time_phrase, '%I:%M%p')
     except ValueError:
         return None
 
@@ -105,9 +119,16 @@ def extract_time_phrase(input_text):
     """
     Extract the time phrase from the user input.
     """
-    match = re.search(r'\b\d{1,2}:\d{0,2}\s?(AM|PM|am|pm|Am|Pm|aM|pM|a|A|p|P)\b', input_text, re.IGNORECASE)
-    if match:
-        return match.group(0)
+    time_patterns = [
+        r'\b\d{1,2}(:\d{2})?\s*(am|pm|a\.m\.|p\.m\.|AM|PM|A\.M\.|P\.M\.)?\b',
+        r'\b\d{1,2}(:\d{2})(am|pm|a\.m\.|p\.m\.|AM|PM|A\.M\.|P\.M\.)?\b',
+        r'\b\d{1,2}(am|pm|a\.m\.|p\.m\.|AM|PM|A\.M\.|P\.M\.)\b',
+        r'\b\d{1,2}?\s*(am|pm|a\.m\.|p\.m\.|AM|PM|A\.M\.|P\.M\.)\b', 
+    ]
+    for pattern in time_patterns:
+        match = re.search(pattern, input_text)
+        if match:
+            return match.group()
     return None
 
 def extract_offset_phrase(input_text):
@@ -244,6 +265,15 @@ def train_menu_model(menus):
     freq_dist = FreqDist(all_words)
     return freq_dist
 
+def get_time_range(period):
+    time_ranges = {
+        "morning": ("06:00", "12:00"),
+        "afternoon": ("12:00", "17:00"),
+        "evening": ("17:00", "21:00"),
+        "night": ("21:00", "06:00")
+    }
+    return time_ranges.get(period.lower(), None)
+
 # Generate a response based on user input
 def generate_response(user_input):
     processed_input = preprocess_text(user_input)
@@ -252,6 +282,7 @@ def generate_response(user_input):
     
     cuisine_types = ["Italian", "Mexican", "Japanese", "Indian", "Thai", "Chinese", "French", "Mediterranean", "Middle Eastern", "American", "Korean", "Vietnamese", "Burmese", "German", "Other"]
     days_of_week = ["monday", "tues", "wed", "thurs", "fri", "sat", "sun"]
+    periods = ["morning", "afternoon", "evening", "night"]
     
     for cuisine in cuisine_types:
         if cuisine.lower() in processed_input:
@@ -319,8 +350,12 @@ def generate_response(user_input):
             elif 'sunday' in processed_input:
                 day = 'sun'
             time_phrase = extract_time_phrase(user_input)
+            print(time_phrase)
+            print(user_input.lower())
             if time_phrase:
+                print("Time is key to success")
                 time = parse_time(time_phrase)
+                print(f"time: {time}")
                 if time:
                     print(f"Time: {time}")
                     time_24_hour = time.strftime("%H:%M") 
@@ -329,7 +364,7 @@ def generate_response(user_input):
                     print(f"12 hour: {time_12_hour}") 
                     restaurant_names = get_restaurants_by_hours(day, time_24_hour)
                     if day == 'monday':
-                        day == 'monday'
+                        day = 'monday'
                     elif day == 'tues':
                         day = 'tuesday'
                     elif day == 'wed':
@@ -346,7 +381,24 @@ def generate_response(user_input):
                         return f"Here are some restaurants open on {day.capitalize()} at {time_12_hour}: {', '.join(restaurant_names)}"
                     else:
                         return f"Sorry, I couldn't find any restaurants open on {day.capitalize()} at {time_12_hour}. Is there anything else I can help you with?"
-        elif 'current time' in user_input.lower() or 'now' in user_input.lower() or 'currently' in user_input.lower() or 'right now' in user_input.lower() or 'rn' in user_input.lower() or 'right this minute' in user_input.lower() or 'right this second' in user_input.lower() or 'current' in user_input.lower() or 'this moment' in user_input.lower():
+            elif 'morning' in user_input.lower() or 'afternoon' in user_input.lower() or 'evening' in user_input.lower() or 'night' in user_input.lower():
+                print("Phrase") 
+                for period in periods:
+                    if period in processed_input:
+                        time_range = get_time_range(period)
+                        if time_range:
+                            start_time, end_time = time_range
+                            # Special handling for night time range which spans two days
+                            if period == "night":
+                                restaurant_names = get_restaurants_by_hours(day, start_time) + get_restaurants_by_hours(day, end_time)
+                            else:
+                                restaurant_names = get_restaurants_by_hours(day, start_time) + get_restaurants_by_hours(day, end_time)
+                            if restaurant_names:
+                                return f"Here are some restaurants open in the {period}: {', '.join(set(restaurant_names))}"
+                            else:
+                                return f"Sorry, I couldn't find any restaurants open in the {period}. Is there anything else I can help you with?"
+                                
+        elif any(phrase in user_input.lower() for phrase in ['current time', 'now', 'currently', 'right now', 'rn', 'right this minute', 'right this second', 'current', 'this moment']):
             time_12_hour, time_24_hour = get_current_time()
             current_day = datetime.now().strftime("%A").lower()
             print(f"current_day: {current_day}")
@@ -367,6 +419,22 @@ def generate_response(user_input):
                 return f"Here are some restaurants open today at {time_12_hour}: {', '.join(restaurant_names)}"
             else:
                 return f"Sorry, I couldn't find any restaurants open today at {time_12_hour}."
+        elif any(phrase in user_input.lower() for phrase in periods): 
+            for period in periods:
+                if period in processed_input:
+                    time_range = get_time_range(period)
+                    if time_range:
+                        start_time, end_time = time_range
+                        # Special handling for night time range which spans two days
+                        if period == "night":
+                            restaurant_names = get_restaurants_by_hours(day, start_time) + get_restaurants_by_hours(day, end_time)
+                        else:
+                            restaurant_names = get_restaurants_by_hours(day, start_time) + get_restaurants_by_hours(day, end_time)
+                        if restaurant_names:
+                            return f"Here are some restaurants open in the {period}: {', '.join(set(restaurant_names))}"
+                        else:
+                            return f"Sorry, I couldn't find any restaurants open in the {period}. Is there anything else I can help you with?"
+
             
         offset_value, offset_unit = extract_offset_phrase(user_input)
         if offset_value and offset_unit:
