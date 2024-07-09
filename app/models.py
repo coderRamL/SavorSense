@@ -106,6 +106,8 @@ def get_restaurants_by_hours(day, time):
     query = sql.SQL(f"SELECT name FROM restaurants WHERE start_hour_{day} <= %s AND end_hour_{day} >= %s ORDER BY rating DESC LIMIT 5")
     cur.execute(query, [time, time])
     results = cur.fetchall()
+    for result in results:
+        print(f"A: {result[0]}")
     cur.close()
     conn.close()
     return [result[0] for result in results]
@@ -120,6 +122,16 @@ def get_restaurants_by_morning(day):
     conn.close()
     return [result[0] for result in results]
 
+def get_restaurants_by_day(day):
+    conn = connect_db()
+    cur = conn.cursor()
+    query = sql.SQL(f"SELECT name FROM restaurants WHERE start_hour_{day} != NULL AND end_hour_{day} != NULL ORDER BY rating DESC LIMIT 5")
+    cur.execute(query)
+    results = cur.fetchall()
+    cur.close()
+    conn.close()
+    return [result[0] for result in results]
+
 def parse_time(time_phrase):
     """
     Try to parse the time in 12-hour format with AM/PM.
@@ -128,7 +140,7 @@ def parse_time(time_phrase):
     try:
         time_phrase = time_phrase.replace('.', '').replace(' ', '')
         if ':' not in time_phrase and ('am' in time_phrase.lower() or 'pm' in time_phrase.lower()):
-            time_phrase = time_phrase.replace('am', ':00am').replace('pm', ':00pm')
+            time_phrase = time_phrase.replace('am', ':00am').replace('pm', ':00pm').replace('AM', ':00am').replace('PM', ':00pm')
         if ':' not in time_phrase:
             time_phrase += ':00'
         return datetime.strptime(time_phrase, '%I:%M%p')
@@ -382,7 +394,7 @@ def generate_response(user_input):
                 continue
     
     for day in days_of_week:
-        if day in processed_input or 'mon' in processed_input or 'tuesday' in processed_input or 'tue' in processed_input or 'wednesday' in processed_input or 'wednes' in processed_input or 'thursday' in processed_input or 'thur' in processed_input or 'thu' in processed_input or 'friday' in processed_input or 'saturday' in processed_input or 'sunday' in processed_input:
+        if day in processed_input or 'mon' in processed_input or 'tuesday' in processed_input or 'tue' in processed_input or 'tues' in processed_input or 'wednesday' in processed_input or 'wednes' in processed_input or 'wed' in processed_input or 'thursday' in processed_input or 'thur' in processed_input or 'thu' in processed_input or 'thurs' in processed_input or 'friday' in processed_input or 'fri' in processed_input or 'saturday' in processed_input or 'sat' in processed_input or 'sun' in processed_input or 'sunday' in processed_input:
             print("In Loop")
             if 'mon' in processed_input:
                 day = 'monday'
@@ -447,7 +459,10 @@ def generate_response(user_input):
                             else:
                                 return f"Sorry, I couldn't find any restaurants open in the {period}. Is there anything else I can help you with?"
                                 
-        elif any(phrase in user_input.lower() for phrase in ['current time', 'now', 'currently', 'right now', 'rn', 'right this minute', 'right this second', 'current', 'this moment']):
+        elif any(phrase in user_input.lower() for phrase in ['current time', 'now', 'currently', 'right now', 'rn', 'right this minute', 'right this second', 'current', 'this moment', 'today']):
+            yes = False
+            if 'today' in user_input.lower():
+                yes = True
             time_12_hour, time_24_hour = get_current_time()
             current_day = datetime.now().strftime("%A").lower()
             print(f"current_day: {current_day}")
@@ -465,7 +480,10 @@ def generate_response(user_input):
                 current_day = 'sun'
             restaurant_names = get_restaurants_by_hours(current_day, time_24_hour)
             if restaurant_names:
-                return f"Here are some restaurants open today at {time_12_hour}: {', '.join(restaurant_names)}"
+                if yes == False:
+                    return f"Here are some restaurants open today at {time_12_hour}: {', '.join(restaurant_names)}"
+                else:
+                    return f"Here are some restaurants open today: {', '.join(restaurant_names)}" 
             else:
                 return f"Sorry, I couldn't find any restaurants open today at {time_12_hour}."
         elif any(phrase in user_input.lower() for phrase in periods): 
@@ -484,6 +502,101 @@ def generate_response(user_input):
                         else:
                             return f"Sorry, I couldn't find any restaurants open in the {period}. Is there anything else I can help you with?"
 
+        elif any(phrase in user_input.lower() for phrase in ['yesterday', 'days ago']):
+            now = datetime.now()
+            time = datetime.now().strftime("%H:%M")
+            if 'yesterday' in user_input.lower():
+                day = (now + timedelta(days=6)).strftime("%A").lower()
+                if day == 'tuesday':
+                        day = 'tues'
+                elif day == 'wednesday':
+                    day = 'wed'
+                elif day == 'thursday':
+                    day = 'thurs'
+                elif day == 'friday':
+                    day = 'fri'
+                elif day == 'saturday':
+                    day = 'sat'
+                elif day == 'sunday':
+                    day = 'sun' 
+                restaurant_names = get_restaurants_by_hours(day, time)
+                if restaurant_names:
+                    return f"Here are some restaurants open yesterday: {', '.join(restaurant_names)}"
+                else:
+                    return f"Sorry, I couldn't find any restaurants open yesterday. Is there anything else I can help you with?" 
+            else: 
+                for word in processed_input:
+                    try:
+                        days = 7 - int(word)
+                        if days >= 0:
+                            day = (now + timedelta(days=days)).strftime("%A").lower()
+                            if day == 'tuesday':
+                                day = 'tues'
+                            elif day == 'wednesday':
+                                day = 'wed'
+                            elif day == 'thursday':
+                                day = 'thurs'
+                            elif day == 'friday':
+                                day = 'fri'
+                            elif day == 'saturday':
+                                day = 'sat'
+                            elif day == 'sunday':
+                                day = 'sun' 
+                            restaurant_names = get_restaurants_by_hours(day, time)
+                            if restaurant_names:
+                                return f"Here are some restaurants open {7 - days} days ago: {', '.join(restaurant_names)}"
+                            else:
+                                return f"Sorry, I couldn't find any restaurants open {7 - days} days ago. Is there anything else I can help you with?"
+                    except ValueError:
+                        continue
+
+        elif any(phrase in user_input.lower() for phrase in ['tomorrow', 'tmr', 'days', 'day']):
+            now = datetime.now()
+            time = datetime.now().strftime("%H:%M")
+            if 'tomorrow' in user_input.lower() or 'tmr' in user_input.lower():
+                day = (now + timedelta(days=1)).strftime("%A").lower()
+                if day == 'tuesday':
+                        day = 'tues'
+                elif day == 'wednesday':
+                    day = 'wed'
+                elif day == 'thursday':
+                    day = 'thurs'
+                elif day == 'friday':
+                    day = 'fri'
+                elif day == 'saturday':
+                    day = 'sat'
+                elif day == 'sunday':
+                    day = 'sun' 
+                restaurant_names = get_restaurants_by_hours(day, time)
+                if restaurant_names:
+                    return f"Here are some restaurants open tomorrow: {', '.join(restaurant_names)}"
+                else:
+                    return f"Sorry, I couldn't find any restaurants open tomorrow. Is there anything else I can help you with?" 
+            else: 
+                for word in processed_input:
+                    try:
+                        days = int(word)
+                        if days >= 0:
+                            day = (now + timedelta(days=days)).strftime("%A").lower()
+                            if day == 'tuesday':
+                                day = 'tues'
+                            elif day == 'wednesday':
+                                day = 'wed'
+                            elif day == 'thursday':
+                                day = 'thurs'
+                            elif day == 'friday':
+                                day = 'fri'
+                            elif day == 'saturday':
+                                day = 'sat'
+                            elif day == 'sunday':
+                                day = 'sun' 
+                            restaurant_names = get_restaurants_by_hours(day, time)
+                            if restaurant_names:
+                                return f"Here are some restaurants open in {days} days: {', '.join(restaurant_names)}"
+                            else:
+                                return f"Sorry, I couldn't find any restaurants open in {days} days. Is there anything else I can help you with?"
+                    except ValueError:
+                        continue 
             
         offset_value, offset_unit = extract_offset_phrase(user_input)
         if offset_value and offset_unit:
@@ -520,6 +633,70 @@ def generate_response(user_input):
                 return f"Here are some restaurants open on {future_day.capitalize()} at {future_time_12_hour}: {', '.join(restaurant_names)}"
             else:
                 return f"Sorry, I couldn't find any restaurants open on {future_day.capitalize()} at {future_time_12_hour}."
+            
+        time_phrase = extract_time_phrase(user_input)
+        if time_phrase:
+            time = parse_time(time_phrase)
+            if time:
+                print(f"Time: {time}")
+                time_24_hour = time.strftime("%H:%M") 
+                print(f"24 hour: {time_24_hour}") 
+                time_12_hour = time.strftime("%I:%M %p")
+                print(f"12 hour: {time_12_hour}")
+                day = datetime.now().strftime("%A").lower() 
+                now = datetime.now()
+                print(f"Now: {now.time()}")
+                print(f"klefls: {time.time()}")
+                if now.time().replace(second=0, microsecond=0) > time.time():
+                    day = (now + timedelta(days=1)).strftime("%A").lower()
+                    if day == 'tuesday':
+                        day = 'tues'
+                    elif day == 'wednesday':
+                        day = 'wed'
+                    elif day == 'thursday':
+                        day = 'thurs'
+                    elif day == 'friday':
+                        day = 'fri'
+                    elif day == 'saturday':
+                        day = 'sat'
+                    elif day == 'sunday':
+                        day = 'sun'
+                    restaurant_names = get_restaurants_by_hours(day, time_24_hour)
+                    if day == 'tues':
+                        day = 'tuesday'
+                    elif day == 'wed':
+                        day = 'wednesday'
+                    elif day == 'thurs':
+                        day = 'thursday'
+                    elif day == 'fri':
+                        day = 'friday'
+                    elif day == 'sat':
+                        day = 'saturday'
+                    elif day == 'sun':
+                        day = 'sunday'
+                    if restaurant_names:
+                        return f"Here are some restaurants open at {time_12_hour} tomorrow on {day.capitalize()}: {', '.join(restaurant_names)}"
+                    else:
+                        return f"Sorry, I couldn't find any restaurants open at {time_12_hour} tomorrow on {day.capitalize()}. Please be more specific."
+                if day == 'tuesday':
+                    day = 'tues'
+                elif day == 'wednesday':
+                    day = 'wed'
+                elif day == 'thursday':
+                    day = 'thurs'
+                elif day == 'friday':
+                    day = 'fri'
+                elif day == 'saturday':
+                    day = 'sat'
+                elif day == 'sunday':
+                    day = 'sun'
+
+                restaurant_names = get_restaurants_by_hours(day, time_24_hour)
+                if restaurant_names:
+                    return f"Here are some restaurants open at {time_12_hour} today: {', '.join(restaurant_names)}"
+            else:
+                return f"Sorry, I couldn't find any restaurants open at {time_12_hour}. Please be more specific."
+
     
     for word in processed_input:
         search_results = search_menu(word, menu_database)
