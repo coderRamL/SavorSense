@@ -60,6 +60,26 @@ def get_restaurants_by_rating(min_rating):
     conn.close()
     return [result[0] for result in results]
 
+def get_restaurants_by_rating_max():
+    conn = connect_db()
+    cur = conn.cursor()
+    query = sql.SQL("SELECT name FROM restaurants ORDER BY rating DESC LIMIT 3")
+    cur.execute(query)
+    results = cur.fetchall()
+    cur.close()
+    conn.close()
+    return [result[0] for result in results]
+
+def get_restaurants_by_rating_min():
+    conn = connect_db()
+    cur = conn.cursor()
+    query = sql.SQL("SELECT name FROM restaurants ORDER BY rating LIMIT 3")
+    cur.execute(query)
+    results = cur.fetchall()
+    cur.close()
+    conn.close()
+    return [result[0] for result in results]
+
 def get_restaurants_by_price(price_range):
     conn = connect_db()
     cur = conn.cursor()
@@ -70,21 +90,21 @@ def get_restaurants_by_price(price_range):
     conn.close()
     return [result[0] for result in results]
 
-def get_restaurants_by_price_max(price_range):
+def get_restaurants_by_price_max():
     conn = connect_db()
     cur = conn.cursor()
-    query = sql.SQL("SELECT name FROM restaurants WHERE low_price >= %s and high_price > %s ORDER BY rating DESC LIMIT 3")
-    cur.execute(query, [price_range, price_range])
+    query = sql.SQL("SELECT name FROM restaurants ORDER BY high_price, low_price DESC LIMIT 3")
+    cur.execute(query)
     results = cur.fetchall()
     cur.close()
     conn.close()
     return [result[0] for result in results]
 
-def get_restaurants_by_price_min(price_range):
+def get_restaurants_by_price_min():
     conn = connect_db()
     cur = conn.cursor()
-    query = sql.SQL("SELECT name FROM restaurants WHERE low_price < %s and high_price < %s ORDER BY rating LIMIT 3")
-    cur.execute(query, [price_range, price_range])
+    query = sql.SQL("SELECT name FROM restaurants ORDER BY high_price, low_price LIMIT 3")
+    cur.execute(query)
     results = cur.fetchall()
     cur.close()
     conn.close()
@@ -115,6 +135,26 @@ def get_restaurants_by_reviews(min_reviews):
     cur = conn.cursor()
     query = sql.SQL("SELECT name FROM restaurants WHERE num_reviews >= %s ORDER BY num_reviews DESC, rating DESC LIMIT 5")
     cur.execute(query, [min_reviews])
+    results = cur.fetchall()
+    cur.close()
+    conn.close()
+    return [result[0] for result in results]
+
+def get_restaurants_by_reviews_max():
+    conn = connect_db()
+    cur = conn.cursor()
+    query = sql.SQL("SELECT name FROM restaurants ORDER BY num_reviews DESC, rating DESC LIMIT 3")
+    cur.execute(query)
+    results = cur.fetchall()
+    cur.close()
+    conn.close()
+    return [result[0] for result in results]
+
+def get_restaurants_by_reviews_min():
+    conn = connect_db()
+    cur = conn.cursor()
+    query = sql.SQL("SELECT name FROM restaurants ORDER BY num_reviews, rating LIMIT 3")
+    cur.execute(query)
     results = cur.fetchall()
     cur.close()
     conn.close()
@@ -321,8 +361,8 @@ def search_menu(item, menu_database):
 
 def preprocess_text(text):
     stop_words = set(stopwords.words('english'))
-    # Remove 'under' and 'over' from the stop words list
-    custom_stop_words = stop_words - {'under', 'over', 'below', 'above', 'than', 'more', 'less'}
+    # Remove 'under' and 'over' from the stop words list and other words
+    custom_stop_words = stop_words - {'under', 'over', 'below', 'above', 'than', 'more', 'less', 'a lot', 'not'}
 
     word_tokens = word_tokenize(text)
     filtered_text = [w.lower() for w in word_tokens if not w.lower() in custom_stop_words]
@@ -401,18 +441,43 @@ def generate_response(user_input):
             else:
                 return f"Sorry, I couldn't find any restaurants that match your preference. Is there anything else I can help you with?"           
             
-    if 'rating' in processed_input or '' or 'ratings' in processed_input or 'how good' in processed_input:
-        for word in processed_input:
-            try:
-                rating = float(word)
-                if 0 <= rating <= 5:
-                    restaurant_names = get_restaurants_by_rating(rating)
+    if 'rating' in processed_input or '' or 'ratings' in processed_input or 'how good' in user_input.lower() or 'stars' in processed_input  or 'star' in processed_input or 'rate' in processed_input or 'good' in processed_input or 'great' in processed_input or 'awesome' in processed_input or 'amazing' in processed_input or 'delicious' in processed_input or 'spectacular' in processed_input or 'satisfying' in processed_input or 'up to par' in user_input.lower() or 'bad' in processed_input or 'horrible' in processed_input or 'not up to par' in user_input.lower() or 'not good' in user_input.lower() or 'disgusting' in processed_input or 'dissatisfying' in processed_input  or 'best' in processed_input or 'worst' in processed_input:
+        if 'how good' in user_input.lower() or 'good' in processed_input or 'great' in processed_input or 'awesome' in processed_input or 'amazing' in processed_input or 'delicious' in processed_input or 'spectacular' in processed_input or 'satisfying' in processed_input or 'up to par' in user_input.lower() or 'best' in processed_input or 'highest' in processed_input or 'high' in processed_input:
+            for word in processed_input:
+                try:
+                    # rating = float(word)
+                    # if 0 <= rating <= 5:
+                    restaurant_names = get_restaurants_by_rating_max()
                     if restaurant_names:
-                        return f"Here are some restaurants with a rating of {rating} or higher: {', '.join(restaurant_names)}"
+                        return f"Here are some restaurants with the highest ratings: {', '.join(restaurant_names)}"
                     else:
-                        return f"Sorry, I couldn't find any restaurants with a rating of {rating} or higher. Is there anything else I can help you with?"
-            except ValueError:
-                continue
+                        return f"Sorry, I couldn't find any restaurants with your specified rating. Is there anything else I can help you with?"
+                except ValueError:
+                    continue
+        elif 'bad' in processed_input or 'horrible' in processed_input or 'not up to par' in user_input.lower() or 'not good' in user_input.lower() or 'disgusting' in processed_input or 'dissatisfying' in processed_input or 'worst' in processed_input or 'low' in processed_input or 'lowest' in processed_input:
+            for word in processed_input:
+                try:
+                    # rating = float(word)
+                    # if 0 <= rating <= 5:
+                    restaurant_names = get_restaurants_by_rating_min()
+                    if restaurant_names:
+                        return f"Here are some restaurants with the lowest ratings: {', '.join(restaurant_names)}"
+                    else:
+                        return f"Sorry, I couldn't find any restaurants with your specified rating. Is there anything else I can help you with?"
+                except ValueError:
+                    continue
+        else:
+            for word in processed_input:
+                try:
+                    rating = float(word)
+                    if 0 <= rating <= 5:
+                        restaurant_names = get_restaurants_by_rating(rating)
+                        if restaurant_names:
+                            return f"Here are some restaurants with a rating of {rating} or higher: {', '.join(restaurant_names)}"
+                        else:
+                            return f"Sorry, I couldn't find any restaurants with a rating of {rating} or higher. Is there anything else I can help you with?"
+                except ValueError:
+                    continue
     
     if 'price' in processed_input or '$' in processed_input or 'dollars' in processed_input or 'dollar' in processed_input or 'pricing' in processed_input or 'range' in processed_input or 'under' in processed_input or 'below' in processed_input or 'cost' in processed_input or 'costing' in processed_input or 'amount' in processed_input or 'over' in processed_input or 'above' in processed_input or 'cheap' in processed_input or 'cheaper than' in processed_input or 'more expensive than' in processed_input or 'expensive' in processed_input or 'affordable' in processed_input or 'high price' in processed_input or 'low price' in processed_input or 'cheapest' in processed_input or 'most expensive' in processed_input or 'lower prices' in processed_input or 'higher prices' in processed_input or 'lowest prices' in processed_input or 'highest prices' in processed_input or 'lower' in processed_input or 'more affordable than' in processed_input  or 'higher' in processed_input:
         print(processed_input)
@@ -445,27 +510,26 @@ def generate_response(user_input):
         elif 'cheap' in processed_input or 'affordable' in processed_input or 'low price' in processed_input or 'cheapest' in processed_input or 'lowest prices' in processed_input or 'lower prices' in processed_input:
             for word in processed_input:
                 try:
-                    price = float(word)
-                    print(f"price: {price}")
-                    if 0 <= price:
-                        restaurant_names = get_restaurants_by_price_min(price)
-                        if restaurant_names:
-                            return f"Here are some restaurants that fit your price range: {', '.join(restaurant_names)}"
-                        else:
-                            return f"Sorry, I couldn't find any restaurants with your price range. Is there anything else I can help you with?"
+                    # price = float(word)
+                    # print(f"price: {price}")
+                    restaurant_names = get_restaurants_by_price_min()
+                    if restaurant_names:
+                        return f"Here are some restaurants that fit your price range: {', '.join(restaurant_names)}"
+                    else:
+                        return f"Sorry, I couldn't find any restaurants with your price range. Is there anything else I can help you with?"
                 except ValueError:
                     continue
         elif 'expensive' in processed_input or 'high price' in processed_input or 'most expensive' in processed_input or 'highest prices' in processed_input or 'higher prices' in processed_input:
             for word in processed_input:
                 try:
-                    price = float(word)
-                    print(f"price: {price}")
-                    if 0 <= price:
-                        restaurant_names = get_restaurants_by_price_max(price)
-                        if restaurant_names:
-                            return f"Here are some restaurants that fit your price range: {', '.join(restaurant_names)}"
-                        else:
-                            return f"Sorry, I couldn't find any restaurants with your price range. Is there anything else I can help you with?"
+                    # price = float(word)
+                    # print(f"price: {price}")
+                    # if 0 <= price:
+                    restaurant_names = get_restaurants_by_price_max()
+                    if restaurant_names:
+                        return f"Here are some restaurants that fit your price range: {', '.join(restaurant_names)}"
+                    else:
+                        return f"Sorry, I couldn't find any restaurants with your price range. Is there anything else I can help you with?"
                 except ValueError:
                     continue
         else:
@@ -482,18 +546,43 @@ def generate_response(user_input):
                 except ValueError:
                     continue
         
-    if 'reviews' in processed_input or 'review' in processed_input:
-        for word in processed_input:
-            try:
-                min_reviews = int(word)
-                if min_reviews >= 0:
-                    restaurant_names = get_restaurants_by_reviews(min_reviews)
+    if 'reviews' in processed_input or 'review' in processed_input or 'a lot' in user_input.lower() or 'many' in processed_input or 'much' in processed_input or 'tons' in processed_input or 'few' in processed_input or 'least' in processed_input or 'not a lot' in user_input.lower() or 'most' in processed_input:
+        if 'a lot' in user_input.lower() or 'many' in processed_input or 'much' in processed_input or 'tons' in processed_input or 'most' in processed_input:
+            for word in processed_input:
+                try:
+                    # min_reviews = int(word)
+                    # if min_reviews >= 0:
+                    restaurant_names = get_restaurants_by_reviews_max()
                     if restaurant_names:
-                        return f"Here are some restaurants with {min_reviews} or more reviews: {', '.join(restaurant_names)}"
+                        return f"Here are some restaurants with the most reviews: {', '.join(restaurant_names)}"
                     else:
-                        return f"Sorry, I couldn't find any restaurants with {min_reviews} or more reviews. Is there anything else I can help you with?"
-            except ValueError:
-                continue
+                        return f"Sorry, I couldn't find any restaurants with the specified number of reviews. Is there anything else I can help you with?"
+                except ValueError:
+                    continue
+        elif 'few' in processed_input or 'least' in processed_input or 'not a lot' in user_input.lower():
+            for word in processed_input:
+                try:
+                    # min_reviews = int(word)
+                    # if min_reviews >= 0:
+                    restaurant_names = get_restaurants_by_reviews_min()
+                    if restaurant_names:
+                        return f"Here are some restaurants with the least reviews: {', '.join(restaurant_names)}"
+                    else:
+                        return f"Sorry, I couldn't find any restaurants with the specified number of reviews. Is there anything else I can help you with?"
+                except ValueError:
+                    continue
+        else:
+            for word in processed_input:
+                try:
+                    min_reviews = int(word)
+                    if min_reviews >= 0:
+                        restaurant_names = get_restaurants_by_reviews(min_reviews)
+                        if restaurant_names:
+                            return f"Here are some restaurants with {min_reviews} or more reviews: {', '.join(restaurant_names)}"
+                        else:
+                            return f"Sorry, I couldn't find any restaurants with {min_reviews} or more reviews. Is there anything else I can help you with?"
+                except ValueError:
+                    continue
     
     for day in days_of_week:
         if day in processed_input or 'mon' in processed_input or 'tuesday' in processed_input or 'tue' in processed_input or 'tues' in processed_input or 'wednesday' in processed_input or 'wednes' in processed_input or 'wed' in processed_input or 'thursday' in processed_input or 'thur' in processed_input or 'thu' in processed_input or 'thurs' in processed_input or 'friday' in processed_input or 'fri' in processed_input or 'saturday' in processed_input or 'sat' in processed_input or 'sun' in processed_input or 'sunday' in processed_input:
