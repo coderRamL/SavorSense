@@ -278,30 +278,65 @@ def get_restaurants_menus():
     conn.close()
     return results
 
+def get_restaurants_by_name():
+    conn = connect_db()
+    cur = conn.cursor()
+    query = sql.SQL("SELECT name FROM restaurants")
+    cur.execute(query)
+    results = cur.fetchall()
+    cur.close()
+    conn.close()
+    return [result[0] for result in results]
+ 
 def search_restaurant_by_name(api_key, restaurant_name):
     url = f'https://api.spoonacular.com/food/menuItems/search'
     all_menu_items = []
     offset = 0
-    number = 50  # The maximum number of items to fetch per request (adjust as needed)
-
-    while True:
-        params = {
-            'query': restaurant_name,
-            'number': number,
-            'offset': offset,
-            'apiKey': api_key
-        }
-        response = requests.get(url, params=params)
-        response.raise_for_status()
-        data = response.json()
-        menu_items = data.get('menuItems', [])
+    number = 20  # The maximum number of items to fetch per request (adjust as needed)
+    params = {
+        'query': restaurant_name,
+        'number': number,
+        'apiKey': api_key
+    }
+    response = requests.get(url, params=params)
+    response.raise_for_status()
+    data = response.json()
+    menu_items = data.get('menuItems', [])
+    filtered_items = [
+            {
+                'restaurant': item.get('restaurantChain', 'N/A'),
+                'title': item.get('title', 'N/A')
+            }
+            for item in menu_items
+            if item.get('restaurantChain', '').lower() == restaurant_name.lower()
+    ]
+    all_menu_items.extend(filtered_items)
+    # while True:
+    #     params = {
+    #         'query': restaurant_name,
+    #         'number': number,
+    #         'offset': offset,
+    #         'apiKey': api_key
+    #     }
+    #     response = requests.get(url, params=params)
+    #     response.raise_for_status()
+    #     data = response.json()
+    #     menu_items = data.get('menuItems', [])
         
-        if not menu_items:
-            break  # No more items to fetch
+    #     if not menu_items:
+    #         break  # No more items to fetch
         
-        filtered_items = [item for item in menu_items if item.get('restaurantChain', '').lower() == restaurant_name.lower()]
-        all_menu_items.extend(filtered_items)
-        offset += number  # Move to the next page
+        
+    #     filtered_items = [
+    #         {
+    #             'restaurant': item.get('restaurantChain', 'N/A'),
+    #             'title': item.get('title', 'N/A')
+    #         }
+    #         for item in menu_items
+    #         if item.get('restaurantChain', '').lower() == restaurant_name.lower()
+    #     ]
+    #     all_menu_items.extend(filtered_items)
+    #     offset += number  # Move to the next page
 
     return all_menu_items
     # params = {
@@ -313,19 +348,20 @@ def search_restaurant_by_name(api_key, restaurant_name):
     # response.raise_for_status()
     # return response.json()
 
-def display_menu_items(menu_items):
-    for item in menu_items:
-        title = item.get('title', 'N/A')
-        image = item.get('image', 'N/A')
-        description = item.get('description', 'N/A')
-        servings = item.get('servings', {})
-        size = servings.get('size', 'N/A')
-        unit = servings.get('unit', 'N/A')
-        print(f"Title: {title}")
-        print(f"Image: {image}")
-        print(f"Description: {description}")
-        print(f"Serving Size: {size} {unit}")
-        print()
+def fetch_all_menu_items(api_key):
+    restaurant_names = get_restaurants_by_name()
+    all_menu_items = []
+
+    for restaurant in restaurant_names:
+        menu_items = search_restaurant_by_name(api_key, restaurant)
+        all_menu_items.extend(menu_items)
+
+    return all_menu_items
+
+def extract_food_item(user_input):
+    # Split user input into words
+    words = user_input.lower().split()
+    return words
 
 def extract_restaurant_id_by_name(search_results, restaurant_name):
     for item in search_results['menuItems']:
@@ -344,11 +380,9 @@ def fetch_menu_items(api_key, restaurant_id):
     return response.json()
 
 # Use your Spoonacular API key
-api_key = 'e7431a414289413c9de8c7ac0e548747'
+#api_key = 'e7431a414289413c9de8c7ac0e548747'
+api_key = '6cb87a4a0c6a4723b373e210049a58e7'
 
-restaurant_name = 'Taco Bell'
-search_results = search_restaurant_by_name(api_key, restaurant_name)
-print(search_results)
 #display_menu_items(search_results)
 
 # Extract the restaurant ID from the search results
@@ -1046,7 +1080,31 @@ def generate_response(user_input):
             else:
                 return f"Sorry, I couldn't find any restaurants open at {time_12_hour}. Please be more specific."
 
-    
+    food_words = extract_food_item(user_input)
+
+    if food_words:
+        all_menu_items = fetch_all_menu_items(api_key)
+        matched_items = []
+
+        for item in all_menu_items:
+            print(f"Item: {item}")
+            item_title_words = item['title'].lower().split()
+            for word in food_words:
+                if word in item_title_words:
+                    matched_items.append(item)
+                    break
+
+        if matched_items:
+            print(matched_items)
+            response = "Here are some options you might like:\n"
+            for item in matched_items:
+                response += f"{item['title']} at {item['restaurant']},\n" 
+            response = response[:len(response) - 2]
+        else:
+            response = f"Sorry, I couldn't find any menu items matching your request. Is there anything else I can help you with?"
+
+        return response
+
     # for word in processed_input:
     #     search_results = search_menu(word, menu_database)
     #     if search_results:
