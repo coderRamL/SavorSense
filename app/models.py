@@ -11,6 +11,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime, timedelta
 import requests
+import json
 from bs4 import BeautifulSoup
 
 nltk.download('punkt')
@@ -277,6 +278,92 @@ def get_restaurants_menus():
     conn.close()
     return results
 
+def search_restaurant_by_name(api_key, restaurant_name):
+    url = f'https://api.spoonacular.com/food/menuItems/search'
+    all_menu_items = []
+    offset = 0
+    number = 50  # The maximum number of items to fetch per request (adjust as needed)
+
+    while True:
+        params = {
+            'query': restaurant_name,
+            'number': number,
+            'offset': offset,
+            'apiKey': api_key
+        }
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        data = response.json()
+        menu_items = data.get('menuItems', [])
+        
+        if not menu_items:
+            break  # No more items to fetch
+        
+        filtered_items = [item for item in menu_items if item.get('restaurantChain', '').lower() == restaurant_name.lower()]
+        all_menu_items.extend(filtered_items)
+        offset += number  # Move to the next page
+
+    return all_menu_items
+    # params = {
+    #     'query': restaurant_name,
+    #     'number': number,
+    #     'apiKey': api_key
+    # }
+    # response = requests.get(url, params=params)
+    # response.raise_for_status()
+    # return response.json()
+
+def display_menu_items(menu_items):
+    for item in menu_items:
+        title = item.get('title', 'N/A')
+        image = item.get('image', 'N/A')
+        description = item.get('description', 'N/A')
+        servings = item.get('servings', {})
+        size = servings.get('size', 'N/A')
+        unit = servings.get('unit', 'N/A')
+        print(f"Title: {title}")
+        print(f"Image: {image}")
+        print(f"Description: {description}")
+        print(f"Serving Size: {size} {unit}")
+        print()
+
+def extract_restaurant_id_by_name(search_results, restaurant_name):
+    for item in search_results['menuItems']:
+        if restaurant_name.lower() in item['title'].lower():
+            return item['id']
+    return None
+
+
+def fetch_menu_items(api_key, restaurant_id):
+    url = f'https://api.spoonacular.com/food/menuItems/{restaurant_id}'
+    params = {
+        'apiKey': api_key
+    }
+    response = requests.get(url, params=params)
+    response.raise_for_status()
+    return response.json()
+
+# Use your Spoonacular API key
+api_key = 'e7431a414289413c9de8c7ac0e548747'
+
+restaurant_name = 'Taco Bell'
+search_results = search_restaurant_by_name(api_key, restaurant_name)
+print(search_results)
+#display_menu_items(search_results)
+
+# Extract the restaurant ID from the search results
+#restaurant_id = extract_restaurant_id_by_name(search_results, restaurant_name)
+
+
+# Search for restaurants based on a query
+
+
+# Extract restaurant IDs from the search results
+
+
+
+
+
 def fetch_menu_html(menu_link):
     if not menu_link.startswith("http://") and not menu_link.startswith("https://"):
         print(f"Invalid URL: {menu_link}")
@@ -334,21 +421,21 @@ def print_menu_html_for_restaurant(restaurant_name, menu_link):
     except requests.exceptions.RequestException as e:
         print(f"Failed to fetch menu from {menu_link}: {e}")
 
-menu_url = 'http://www.tacobell.com/food'
-html_content = fetch_menu_html(menu_url)
-if html_content:
-    preprocessed_menu = process_menu(html_content)
-    print(preprocessed_menu)
+# menu_url = 'http://www.tacobell.com/food'
+# html_content = fetch_menu_html(menu_url)
+# if html_content:
+#     preprocessed_menu = process_menu(html_content)
+#     print(preprocessed_menu)
 
-def build_menu_database():
-    restaurants = get_restaurants_menus()
-    menu_database = {}
-    for name in restaurants:
-        menu_items = process_menu(html_content)
-        menu_database[name] = menu_items
-    return menu_database
+# def build_menu_database():
+#     restaurants = get_restaurants_menus()
+#     menu_database = {}
+#     for name in restaurants:
+#         menu_items = process_menu(html_content)
+#         menu_database[name] = menu_items
+#     return menu_database
 
-menu_database = build_menu_database()
+# menu_database = build_menu_database()
 
 
 def search_menu(item, menu_database):
@@ -960,13 +1047,13 @@ def generate_response(user_input):
                 return f"Sorry, I couldn't find any restaurants open at {time_12_hour}. Please be more specific."
 
     
-    for word in processed_input:
-        search_results = search_menu(word, menu_database)
-        if search_results:
-            response = "Here are some options you might like:\n"
-            for restaurant, menu_item in search_results:
-                response += f"{menu_item} at {restaurant}\n"
-            return response.strip()
+    # for word in processed_input:
+    #     search_results = search_menu(word, menu_database)
+    #     if search_results:
+    #         response = "Here are some options you might like:\n"
+    #         for restaurant, menu_item in search_results:
+    #             response += f"{menu_item} at {restaurant}\n"
+    #         return response.strip()
 
     return "I'm not sure what you would like. Can you be more specific? Make sure everything is spelled properly."
 
