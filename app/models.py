@@ -1082,15 +1082,36 @@ def generate_response(user_input):
 
     food_words = extract_food_item(user_input)
 
+    def normalize_word(word):
+        if word.endswith("s"):
+            word = word[:-1]
+        if word in ["hamburger", "cheeseburger"]:
+            return "burger"
+        return word
+
+    def normalize_menu_item_title(title):
+        words = title.lower().split()
+        normalized_words = []
+        for word in words:
+            if "burger" in word:
+                normalized_words.append("burger")
+            else:
+                normalized_words.append(normalize_word(word))
+        return normalized_words
+
     if food_words:
         all_menu_items = fetch_all_menu_items(api_key)
         matched_items = []
 
+        # Normalize food_words
+        normalized_food_words = [normalize_word(word.lower()) for word in food_words]
+
         for item in all_menu_items:
             print(f"Item: {item}")
-            item_title_words = item['title'].lower().split()
-            for word in food_words:
-                if word in item_title_words:
+            # Normalize the title of each menu item
+            normalized_title_words = normalize_menu_item_title(item['title'])
+            for word in normalized_food_words:
+                if word in normalized_title_words:
                     matched_items.append(item)
                     break
 
@@ -1098,12 +1119,14 @@ def generate_response(user_input):
             print(matched_items)
             response = "Here are some options you might like:\n"
             for item in matched_items:
-                response += f"{item['title']} at {item['restaurant']},\n" 
-            response = response[:len(response) - 2]
+                response += f"{item['title']} at {item['restaurant']},\n"
+            response = response[:len(response) - 2]  # Remove trailing comma and newline
         else:
-            response = f"Sorry, I couldn't find any menu items matching your request. Is there anything else I can help you with?"
+            response = "Sorry, I couldn't find any menu items matching your request. Is there anything else I can help you with?"
 
         return response
+
+
 
     # for word in processed_input:
     #     search_results = search_menu(word, menu_database)
