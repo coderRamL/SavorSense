@@ -288,14 +288,14 @@ def get_restaurants_by_name():
     conn.close()
     return [result[0] for result in results]
 
-#api_key = 'e7431a414289413c9de8c7ac0e548747'
-api_key = '6cb87a4a0c6a4723b373e210049a58e7'
+api_key = 'e7431a414289413c9de8c7ac0e548747'
+#api_key = '6cb87a4a0c6a4723b373e210049a58e7'
 
 def search_restaurant_by_name(api_key, restaurant_name):
     url = f'https://api.spoonacular.com/food/menuItems/search'
     all_menu_items = []
     offset = 0
-    number = 10  # The maximum number of items to fetch per request (adjust as needed)
+    number = 50  # The maximum number of items to fetch per request (adjust as needed)
     params = {
         'query': restaurant_name,
         'number': number,
@@ -386,7 +386,7 @@ def fetch_menu_items(api_key, restaurant_id):
 
 # Use your Spoonacular API key
 #api_key = 'e7431a414289413c9de8c7ac0e548747'
-api_key = '6cb87a4a0c6a4723b373e210049a58e7'
+#api_key = '6cb87a4a0c6a4723b373e210049a58e7'
 
 #display_menu_items(search_results)
 
@@ -1088,6 +1088,8 @@ def generate_response(user_input):
     food_words = extract_food_item(user_input)
 
     def normalize_word(word):
+        if word[len(word) - 1] == '.' or word[len(word) - 1] == '?' or word[len(word) - 1] == '!':
+            word = word[:len(word) - 1]
         if word.endswith("s"):
             word = word[:-1]
         if word in ["hamburger", "cheeseburger"]:
