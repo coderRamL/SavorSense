@@ -287,12 +287,15 @@ def get_restaurants_by_name():
     cur.close()
     conn.close()
     return [result[0] for result in results]
- 
+
+#api_key = 'e7431a414289413c9de8c7ac0e548747'
+api_key = '6cb87a4a0c6a4723b373e210049a58e7'
+
 def search_restaurant_by_name(api_key, restaurant_name):
     url = f'https://api.spoonacular.com/food/menuItems/search'
     all_menu_items = []
     offset = 0
-    number = 20  # The maximum number of items to fetch per request (adjust as needed)
+    number = 10  # The maximum number of items to fetch per request (adjust as needed)
     params = {
         'query': restaurant_name,
         'number': number,
@@ -308,7 +311,7 @@ def search_restaurant_by_name(api_key, restaurant_name):
                 'title': item.get('title', 'N/A')
             }
             for item in menu_items
-            if item.get('restaurantChain', '').lower() == restaurant_name.lower()
+            #if item.get('restaurantChain', '').lower() == restaurant_name.lower()
     ]
     all_menu_items.extend(filtered_items)
     # while True:
@@ -347,6 +350,8 @@ def search_restaurant_by_name(api_key, restaurant_name):
     # response = requests.get(url, params=params)
     # response.raise_for_status()
     # return response.json()
+#result = search_restaurant_by_name(api_key, "PF Changs")
+#print(result)
 
 def fetch_all_menu_items(api_key):
     restaurant_names = get_restaurants_by_name()
@@ -1098,6 +1103,8 @@ def generate_response(user_input):
             print(matched_items)
             response = "Here are some options you might like:\n"
             for item in matched_items:
+                if item['restaurant'] == 'The Cheesefacke Factory':
+                    item['restaurant'] = 'The Cheescake Factory'
                 response += f"{item['title']} at {item['restaurant']},\n" 
             response = response[:len(response) - 2]
         else:
