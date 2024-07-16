@@ -288,14 +288,14 @@ def get_restaurants_by_name():
     conn.close()
     return [result[0] for result in results]
 
-api_key = 'e7431a414289413c9de8c7ac0e548747'
-#api_key = '6cb87a4a0c6a4723b373e210049a58e7'
+# api_key = 'e7431a414289413c9de8c7ac0e548747'
+api_key = '6cb87a4a0c6a4723b373e210049a58e7'
 
 def search_restaurant_by_name(api_key, restaurant_name):
     url = f'https://api.spoonacular.com/food/menuItems/search'
     all_menu_items = []
     offset = 0
-    number = 50  # The maximum number of items to fetch per request (adjust as needed)
+    number = 5  # The maximum number of items to fetch per request (adjust as needed)
     params = {
         'query': restaurant_name,
         'number': number,
@@ -1087,11 +1087,34 @@ def generate_response(user_input):
 
     food_words = extract_food_item(user_input)
 
+    import string
+
+    # Restricted ingredients associated with dietary restrictions
+    restricted_ingredients = {
+        "vegetarian": ["chicken", "beef", "pork", "fish", "seafood", "shrimp", "sausage", "wings"],
+        "vegan": ["chicken", "beef", "pork", "fish", "seafood", "shrimp", "dairy", "milk", "cheese", "butter", "egg", "honey", "sausage", "wings"],
+        "pescatarian": ["chicken", "beef", "pork", "sausage", "wings"],
+        "lactose-intolerant": ["dairy", "milk", "cheese", "butter", "queso"],
+        "omnivore": [],  # Omnivores can eat anything
+        "keto": ["bread", "pasta", "rice", "potato", "sugar"],
+        "paleo": ["bread", "pasta", "rice", "legume", "dairy", "sugar"],
+        "nut-free": ["peanut", "almond", "cashew", "walnut", "pecan", "nut"],
+        "halal": ["pork", "bacon", "ham", "pepperoni"],
+        "kosher": ["pork", "shellfish"],
+        "low-carb": ["bread", "pasta", "rice", "potato"],
+        "low-fat": ["butter", "oil", "fatty", "fried"],
+        "gluten-free": ["bread", "pasta", "wheat", "barley", "rye"],
+        "organic": [],  # Assume organic is not restricted by ingredients but by quality
+        "FODMAP": ["garlic", "onion", "wheat", "legume", "dairy", "milk", "cheese", "butter", "apple", "honey"]
+    }
+
     def normalize_word(word):
-        if word[len(word) - 1] == '.' or word[len(word) - 1] == '?' or word[len(word) - 1] == '!':
-            word = word[:len(word) - 1]
+        # Remove trailing punctuation and convert to lowercase
+        word = word.rstrip(string.punctuation).lower()
+        # Remove trailing "s" to handle plural forms
         if word.endswith("s"):
             word = word[:-1]
+        # Normalize specific words to a common form
         if word in ["hamburger", "cheeseburger"]:
             return "burger"
         return word
@@ -1100,52 +1123,56 @@ def generate_response(user_input):
         words = title.lower().split()
         normalized_words = []
         for word in words:
+            # Normalize words containing "burger"
             if "burger" in word:
                 normalized_words.append("burger")
             else:
                 normalized_words.append(normalize_word(word))
         return normalized_words
 
+    def matches_dietary_restrictions(item_title, dietary_restrictions):
+        item_title_words = normalize_menu_item_title(item_title)
+        for restriction in dietary_restrictions:
+            for ingredient in restricted_ingredients.get(restriction, []):
+                if ingredient in item_title_words:
+                    print(f"Item '{item_title}' contains restricted ingredient '{ingredient}' for restriction '{restriction}'")
+                    return False
+        return True
+
     if food_words:
+        dietary_restrictions = ["vegetarian"]  # Example list of dietary restrictions
         all_menu_items = fetch_all_menu_items(api_key)
         matched_items = []
 
         # Normalize food_words
         normalized_food_words = [normalize_word(word.lower()) for word in food_words]
+        print(f"Normalized food words: {normalized_food_words}")
 
         for item in all_menu_items:
             print(f"Item: {item}")
             # Normalize the title of each menu item
             normalized_title_words = normalize_menu_item_title(item['title'])
-            for word in normalized_food_words:
-                if word in normalized_title_words:
-                    matched_items.append(item)
-                    break
+            print(f"Normalized title words: {normalized_title_words}")
+            # Check if item matches food words
+            word_match = any(word in normalized_title_words for word in normalized_food_words)
+            # Check if item matches dietary restrictions
+            dietary_match = matches_dietary_restrictions(item['title'], dietary_restrictions)
+            if word_match and dietary_match:
+                matched_items.append(item)
 
         if matched_items:
             print(matched_items)
             response = "Here are some options you might like:\n"
             for item in matched_items:
-                if item['restaurant'] == 'The Cheesefacke Factory':
-                    item['restaurant'] = 'The Cheescake Factory'
                 response += f"{item['title']} at {item['restaurant']},\n"
-            response = response[:len(response) - 2]  # Remove trailing comma and newline
+            response = response.rstrip(',\n')  # Remove trailing comma and newline
         else:
             response = "Sorry, I couldn't find any menu items matching your request. Is there anything else I can help you with?"
 
+        print(response)
         return response
-
-
-
-    # for word in processed_input:
-    #     search_results = search_menu(word, menu_database)
-    #     if search_results:
-    #         response = "Here are some options you might like:\n"
-    #         for restaurant, menu_item in search_results:
-    #             response += f"{menu_item} at {restaurant}\n"
-    #         return response.strip()
-
-    return "I'm not sure what you would like. Can you be more specific? Make sure everything is spelled properly."
+    
+    return("Sorry what")
 
 # Example usage
 if __name__ == "__main__":
