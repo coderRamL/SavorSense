@@ -108,7 +108,7 @@
             background-color: #f9f9f9;
             min-width: 160px;
             box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-            z-index: 1;
+            z-index: 100;
         }
 
         .dropdown-content a {
@@ -127,10 +127,10 @@
         }
 
         #map {
-            height: 500px;
             width: 100%;
+            height: 500px;
             display: none;
-            z-index: -1;
+            z-index: 0;
         }
 
         .stars {
@@ -246,14 +246,13 @@
         </div>
         
     </div>
-
     <div id="map"></div>
     <!-- Restaurant Cards -->
     <div id="restaurant-card-container" class="restaurant-card-container">
         {% for i in range(0, len, 3) %}
         <div class="restaurant-card-row" id="row-{{i // 3}}">
             {% for j in range(i, min(i + 3, len)) %}
-            <div class="restaurant-card" data-name="{{res[j][1]}}" data-cuisine="{{res[j][2]}}" data-rating="{{res[j][3]}}" data-description="{{res[j][5]}}" data-monday-start="{{ time[j]['start_hour_monday'] }}"
+            <div class="restaurant-card" data-name="{{res[j]['name']}}" data-cuisine="{{res[j]['cuisine']}}" data-rating="{{res[j]['rating']}}" data-description="{{res[j]['description']}}" data-monday-start="{{ time[j]['start_hour_monday'] }}"
             data-monday-end="{{ time[j]['end_hour_monday'] }}"
             data-tuesday-start="{{ time[j]['start_hour_tues'] }}"
             data-tuesday-end="{{ time[j]['end_hour_tues'] }}"
@@ -266,17 +265,17 @@
             data-saturday-start="{{ time[j]['start_hour_sat'] }}"
             data-saturday-end="{{ time[j]['end_hour_sat'] }}"
             data-sunday-start="{{ time[j]['start_hour_sun'] }}"
-            data-sunday-end="{{ time[j]['end_hour_sun'] }}" onclick="redirect('{{ res[j][22] }}')">
-                <h2 class="restaurant-name">{{res[j][1]}}</h2>
-                <p class="restaurant-cuisine">Cuisine: {{res[j][2]}}</p>
-                <p>Price: ${{res[j][26]}}-{{res[j][27]}}</p>
+            data-sunday-end="{{ time[j]['end_hour_sun'] }}" onclick="redirect(`{{ res[j]['website'] }}`)">
+                <h2 class="restaurant-name">{{res[j]['name']}}</h2>
+                <p class="restaurant-cuisine">Cuisine: {{res[j]['cuisine']}}</p>
+                <p>Price: ${{res[j]['low_price']}}-{{res[j]['high_price']}}</p>
                 <p class="restaurant-rating">
-                    Rating: <span class="rating-value">{{res[j][3]}}</span>
-                    <span class="stars" data-rating="{{res[j][3]}}"></span> ({{res[j][4]}})
+                    Rating: <span class="rating-value">{{res[j]['rating']}}</span>
+                    <span class="stars" data-rating="{{res[j]['rating']}}"></span> ({{res[j]['num_reviews']}})
                 </p>
-                <p class="restaurant-description">Description: {{res[j][5]}}</p>
+                <p class="restaurant-description">Description: {{res[j]['description']}}</p>
                 <p class="restaurant-timings">Today's Hours: <span class="timing-value"></span></p>
-                <img style="width: 100px; height: 100px;" src="{{url_for('static', filename=res[j][21])}}">
+                <img style="width: 100px; height: 100px;" src="{{url_for('static', filename=res[j]['image'])}}">
             </div>
             {% endfor %}
         </div>
@@ -449,7 +448,7 @@
             window.location.href = url;
         }
     </script>
-
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
         function toggleDropdown() {
             document.getElementById("dropdown-content").classList.toggle("show");
@@ -569,6 +568,5 @@
         }
         document.getElementById('toggle-map').addEventListener('click', showMap);
     </script>
-
 </body>
 </html>

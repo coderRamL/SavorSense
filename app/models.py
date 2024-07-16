@@ -1127,7 +1127,7 @@ def generate_response(user_input):
             response = "Here are some options you might like:\n"
             for item in matched_items:
                 if item['restaurant'] == 'The Cheesefacke Factory':
-                    item['restaurant'] = 'The Cheescake Factory'
+                    item['restaurant'] = 'The Cheesecake Factory'
                 response += f"{item['title']} at {item['restaurant']},\n"
             response = response[:len(response) - 2]  # Remove trailing comma and newline
         else:

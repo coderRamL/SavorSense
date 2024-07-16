@@ -47,9 +47,33 @@ def convert_to_12hr(time_obj):
 
 @main.route('/', methods=['GET', 'POST'])
 def homepage():
-    try: 
+    try:
+        username = session.get('username')
         engine = create_engine("postgresql://SavorSense_owner:iX2EMY6TzLlf@ep-shrill-cloud-a40et0x7.us-east-1.aws.neon.tech/SavorSense?sslmode=require")
         metadata = MetaData()
+        metadata.reflect(bind=engine)
+        users_table = metadata.tables['users']
+        with engine.connect() as connection:
+            select_stmt = users_table.select().where(users_table.c.username == username)
+            result2 = connection.execute(select_stmt).fetchone()
+        cuisine = result2.cuisine if result2 and result2.cuisine else ''
+        other_cuisine = result2.cuisine_other if result2 and result2.cuisine_other else ''
+        if isinstance(other_cuisine, list):
+            other_cuisine = ', '.join(other_cuisine)
+        elif other_cuisine:
+            other_cuisine = other_cuisine.strip('[]"').replace('", "', ', ') 
+        print(f"other_cuisine: {other_cuisine}")
+        if isinstance(cuisine, list):
+            cuisine = ', '.join(cuisine)
+        elif cuisine:
+           cuisine = cuisine.strip('[]"').replace('", "', ', ')  
+        print(f"cuisine: {cuisine}")
+        user_preferences = []
+        if cuisine:
+            user_preferences.extend([c.lower().strip() for c in cuisine.split(',')])
+        if other_cuisine:
+            user_preferences.extend([c.lower().strip() for c in other_cuisine.split(',')])
+        print(f"UP: {user_preferences}")
         metadata.reflect(bind=engine)
         restaurants_table = metadata.tables['restaurants']
         with engine.connect() as connection:
@@ -66,12 +90,23 @@ def homepage():
                 restaurant[start_key] = convert_to_12hr(restaurant.get(start_key))
                 restaurant[end_key] = convert_to_12hr(restaurant.get(end_key))
             time_data.append(restaurant)
-        print(restaurant_data)
+        
+        def sort_key(restaurant):
+            restaurant_cuisines = [restaurant['cuisine'].lower().strip()] if restaurant['cuisine'] else []
+            matches = sum(1 for pref in user_preferences if pref in restaurant_cuisines)
+            return -matches
+        
+        sorted_restaurant_data = sorted(restaurant_data, key=sort_key)
+        sorted_time_data = sorted(time_data, key=sort_key)
+
         length = len(restaurants)
-        print(length)
-        print(time_data[1]['start_hour_monday'])
+        for i in range(len(sorted_restaurant_data)):
+            print(f"RD: {sorted_restaurant_data[i]['name']}, {sorted_restaurant_data[i]['cuisine']}")
+        
+        for i in range(len(sorted_restaurant_data)):
+            print(f"TD: {sorted_time_data[i]['name']}, {sorted_time_data[i]['cuisine']}")
         i = 0
-        return render_template('homepage.html', time = time_data, res = restaurants, restaurant=restaurant_data, len = length, i = i, min = min)
+        return render_template('homepage.html', time = sorted_time_data, res = sorted_restaurant_data, restaurant=restaurant_data, len = length, i = i, min = min, cuisine=cuisine, other_cuisine=other_cuisine)
     except SQLAlchemyError as e:
         print(f"An error occurred: {e}")
 @main.route('/signup', methods=['GET', 'POST'])
