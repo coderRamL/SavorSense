@@ -407,8 +407,9 @@ def chat():
     user_message = data.get('message')
     if not user_message:
         return jsonify({'response': 'Please enter a message.'})
-    
-    bot_response = generate_response(user_message)
+    username = session.get('username')
+    print(f"username: {username}")
+    bot_response = generate_response(user_message, username)
     return jsonify({'response': bot_response})
 
 

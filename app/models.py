@@ -291,7 +291,7 @@ def get_restaurants_by_name():
 def get_user_dietary_preferences(username):
     conn = connect_db()
     cur = conn.cursor()
-    query = sql.SQL("SELECT dietary, other_dietary FROM users WHERE username = %s")
+    query = sql.SQL("SELECT dietary, dietary_other FROM users WHERE username = %s")
     cur.execute(query, (username,))
     result = cur.fetchone()
     cur.close()
@@ -303,8 +303,8 @@ def get_user_dietary_preferences(username):
         return dietary + other_dietary
     return []
 
-# api_key = 'e7431a414289413c9de8c7ac0e548747'
-api_key = '6cb87a4a0c6a4723b373e210049a58e7'
+api_key = 'e7431a414289413c9de8c7ac0e548747'
+#api_key = '6cb87a4a0c6a4723b373e210049a58e7'
 
 def search_food_items(api_key, query, dietary_preferences):
     restricted_ingredients = {
@@ -338,10 +338,12 @@ def search_food_items(api_key, query, dietary_preferences):
     offset = 0
     number = 10  # The maximum number of items to fetch per request (adjust as needed)
 
+    if not query:
+        query = 'food'
+        
     params = {
             'query': query,
             'number': number,
-            'offset': offset,
             'apiKey': api_key
     }
     response = requests.get(url, params=params)
@@ -635,7 +637,7 @@ def extract_days_from_input(input_text):
     return days if days > 0 else None
 
 # Generate a response based on user input
-def generate_response(user_input):
+def generate_response(user_input, username):
     processed_input = preprocess_text(user_input)
     if greeting(processed_input) != None:
         return greeting(processed_input)
@@ -1170,6 +1172,31 @@ def generate_response(user_input):
             else:
                 return f"Sorry, I couldn't find any restaurants open at {time_12_hour}. Please be more specific."
 
+    if username != None:
+        print("none123")
+        dietary_preferences = get_user_dietary_preferences(username)
+    else:
+        print('yes123')
+        dietary_preferences = 'No'
+
+    if "dietary preferences" in user_input.lower() or "my preferences" in user_input.lower() or "my dietary preferences" in user_input.lower():
+        # Fetch all food items matching the user's dietary preferences
+        if dietary_preferences == 'No':
+            return 'You do not have any saved dietary preferences. Make sure to log in.'
+        
+        menu_items = search_food_items(api_key, '', dietary_preferences)  # Empty query to fetch a variety of items
+        
+        if menu_items:
+            # Format the response with the restaurant name and food item title
+            response = "Here are some options that match your dietary preferences:\n"
+            for item in menu_items:
+                restaurant_name = item.get('restaurantChain', 'Unknown Restaurant')
+                food_title = item.get('title', 'Unknown Food Item')
+                response += f"{food_title} at {restaurant_name}\n"
+            return response
+        else:
+            return "Sorry, I couldn't find any food items that match your dietary preferences."
+        
     food_words = extract_food_item(user_input)
 
     import string
@@ -1269,7 +1296,7 @@ def generate_response(user_input):
                 response += f"{item['title']} at {item['restaurant']},\n"
             response = response.rstrip(',\n')  # Remove trailing comma and newline
         elif dietary_items:
-            print(dietary_items)
+            print(f"DI: {dietary_items}")
             response = "Here are some options that match your dietary restrictions:\n"
             for item in dietary_items:
                 response += f"{item['title']} at {item['restaurant']},\n"
@@ -1279,7 +1306,7 @@ def generate_response(user_input):
 
         print(response)
         return response
-    
+
     return("Sorry what")
 
 # Example usage
