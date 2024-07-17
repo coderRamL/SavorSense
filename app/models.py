@@ -1176,10 +1176,10 @@ def generate_response(user_input):
 
     # Restricted ingredients associated with dietary restrictions
     restricted_ingredients = {
-        "vegetarian": ["chicken", "beef", "pork", "fish", "seafood", "shrimp", "sausage", "wings"],
-        "vegan": ["chicken", "beef", "pork", "fish", "seafood", "shrimp", "dairy", "milk", "cheese", "butter", "egg", "honey", "sausage", "wings"],
-        "pescatarian": ["chicken", "beef", "pork", "sausage", "wings"],
-        "lactose-intolerant": ["dairy", "milk", "cheese", "butter", "queso"],
+        "vegetarian": ["chicken", "beef", "pork", "fish", "seafood", "shrimp", "sausage", "wing", "burger"],
+        "vegan": ["chicken", "beef", "pork", "fish", "seafood", "shrimp", "dairy", "milk", "cheese", "butter", "egg", "honey", "sausage", "wing", "burger", "cheesecake"],
+        "pescatarian": ["chicken", "beef", "pork", "sausage", "wing", "Cheeseburger"],
+        "lactose-intolerant": ["dairy", "milk", "cheese", "butter", "queso", "cheesecake"],
         "omnivore": [],  # Omnivores can eat anything
         "keto": ["bread", "pasta", "rice", "potato", "sugar"],
         "paleo": ["bread", "pasta", "rice", "legume", "dairy", "sugar"],
@@ -1225,9 +1225,11 @@ def generate_response(user_input):
         return True
 
     if food_words:
-        dietary_restrictions = ["vegetarian"]  # Example list of dietary restrictions
+        dietary_restrictions = ["vegetarian", "vegan"]  # Example list of dietary restrictions
         all_menu_items = fetch_all_menu_items(api_key)
         matched_items = []
+        dietary_items = []
+        restricted_items = []
 
         # Normalize food_words
         normalized_food_words = [normalize_word(word.lower()) for word in food_words]
@@ -1242,15 +1244,34 @@ def generate_response(user_input):
             word_match = any(word in normalized_title_words for word in normalized_food_words)
             # Check if item matches dietary restrictions
             dietary_match = matches_dietary_restrictions(item['title'], dietary_restrictions)
+            
             if word_match and dietary_match:
+                # Check if word_match corresponds to restricted ingredients
+                if any(word in restricted_ingredients.get(dietary_restrictions[0], []) for word in normalized_title_words):
+                    restricted_items.append(item)
+                else:
+                    matched_items.append(item)
+            elif word_match:
                 matched_items.append(item)
+            elif dietary_match:
+                dietary_items.append(item)
 
-        if matched_items:
+        if restricted_items:
+            print(restricted_items)
+            response = "Here are some items that match your dietary preferences:\n"
+            for item in restricted_items:
+                response += f"{item['title']} at {item['restaurant']},\n"
+            response = response.rstrip(',\n')  # Remove trailing comma and newline
+        elif matched_items:
             print(matched_items)
             response = "Here are some options you might like:\n"
             for item in matched_items:
-                if item['restaurant'] == 'The Cheesefacke Factory':
-                    item['restaurant'] = 'The Cheesecake Factory'
+                response += f"{item['title']} at {item['restaurant']},\n"
+            response = response.rstrip(',\n')  # Remove trailing comma and newline
+        elif dietary_items:
+            print(dietary_items)
+            response = "Here are some options that match your dietary restrictions:\n"
+            for item in dietary_items:
                 response += f"{item['title']} at {item['restaurant']},\n"
             response = response.rstrip(',\n')  # Remove trailing comma and newline
         else:
