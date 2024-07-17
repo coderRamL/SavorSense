@@ -1207,17 +1207,24 @@ def generate_response(user_input, username):
         "vegan": ["chicken", "beef", "pork", "fish", "seafood", "shrimp", "dairy", "milk", "cheese", "butter", "egg", "honey", "sausage", "wing", "burger", "cheesecake"],
         "pescatarian": ["chicken", "beef", "pork", "sausage", "wing", "Cheeseburger"],
         "lactose-intolerant": ["dairy", "milk", "cheese", "butter", "queso", "cheesecake"],
+        "lactose intolerant": ["dairy", "milk", "cheese", "butter", "queso", "cheesecake"],
         "omnivore": [],  # Omnivores can eat anything
         "keto": ["bread", "pasta", "rice", "potato", "sugar"],
         "paleo": ["bread", "pasta", "rice", "legume", "dairy", "sugar"],
         "nut-free": ["peanut", "almond", "cashew", "walnut", "pecan", "nut"],
+        "nut free": ["peanut", "almond", "cashew", "walnut", "pecan", "nut"],
         "halal": ["pork", "bacon", "ham", "pepperoni"],
         "kosher": ["pork", "shellfish"],
         "low-carb": ["bread", "pasta", "rice", "potato"],
+        "low carb": ["bread", "pasta", "rice", "potato"],
         "low-fat": ["butter", "oil", "fatty", "fried"],
+        "low fat": ["butter", "oil", "fatty", "fried"],
         "gluten-free": ["bread", "pasta", "wheat", "barley", "rye"],
+        "gluten free": ["bread", "pasta", "wheat", "barley", "rye"],
         "organic": [],  # Assume organic is not restricted by ingredients but by quality
-        "FODMAP": ["garlic", "onion", "wheat", "legume", "dairy", "milk", "cheese", "butter", "apple", "honey"]
+        "FODMAP": ["garlic", "onion", "wheat", "legume", "dairy", "milk", "cheese", "butter", "apple", "honey"],
+        "fodmap": ["garlic", "onion", "wheat", "legume", "dairy", "milk", "cheese", "butter", "apple", "honey"],
+        "Fodmap": ["garlic", "onion", "wheat", "legume", "dairy", "milk", "cheese", "butter", "apple", "honey"]
     }
 
     def normalize_word(word):
@@ -1252,7 +1259,12 @@ def generate_response(user_input, username):
         return True
 
     if food_words:
-        dietary_restrictions = ["vegetarian", "vegan"]  # Example list of dietary restrictions
+        dietary_restrictions = ["vegetarian", "vegan", "pescatarian",
+                                "lactose-intolerant", "lactose intolerant",
+                                "omnivore", "keto", "paleo", "nut-free",
+                                "nut free", "halal", "kosher", "low-carb",
+                                "low carb", "low-fat", "low fat", "gluten-free",
+                                "gluten free", "organic", "FODMAP", "fodmap", "Fodmap"]  # Example list of dietary restrictions
         all_menu_items = fetch_all_menu_items(api_key)
         matched_items = []
         dietary_items = []
@@ -1306,8 +1318,8 @@ def generate_response(user_input, username):
 
         print(response)
         return response
-
-    return("Sorry what")
+    
+    return("Sorry, I don't think I understand your request. Can you try again?")
 
 # Example usage
 if __name__ == "__main__":
