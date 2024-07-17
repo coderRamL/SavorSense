@@ -58,6 +58,7 @@ def homepage():
             result2 = connection.execute(select_stmt).fetchone()
         cuisine = result2.cuisine if result2 and result2.cuisine else ''
         other_cuisine = result2.cuisine_other if result2 and result2.cuisine_other else ''
+
         if isinstance(other_cuisine, list):
             other_cuisine = ', '.join(other_cuisine)
         elif other_cuisine:
@@ -67,7 +68,7 @@ def homepage():
             cuisine = ', '.join(cuisine)
         elif cuisine:
            cuisine = cuisine.strip('[]"').replace('", "', ', ')  
-        print(f"cuisine: {cuisine}")
+
         user_preferences = []
         if cuisine:
             user_preferences.extend([c.lower().strip() for c in cuisine.split(',')])
