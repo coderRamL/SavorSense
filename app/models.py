@@ -288,8 +288,93 @@ def get_restaurants_by_name():
     conn.close()
     return [result[0] for result in results]
 
+def get_user_dietary_preferences(username):
+    conn = connect_db()
+    cur = conn.cursor()
+    query = sql.SQL("SELECT dietary, other_dietary FROM users WHERE username = %s")
+    cur.execute(query, (username,))
+    result = cur.fetchone()
+    cur.close()
+    conn.close()
+    
+    if result:
+        dietary = [item.lower() for item in result[0]] if result[0] else []
+        other_dietary = [item.lower() for item in result[1]] if result[1] else []
+        return dietary + other_dietary
+    return []
+
 # api_key = 'e7431a414289413c9de8c7ac0e548747'
 api_key = '6cb87a4a0c6a4723b373e210049a58e7'
+
+def search_food_items(api_key, query, dietary_preferences):
+    restricted_ingredients = {
+        "vegetarian": ["chicken", "beef", "pork", "fish", "seafood", "shrimp", "sausage", "wings"],
+        "vegan": ["chicken", "beef", "pork", "fish", "seafood", "shrimp", "dairy", "milk", "cheese", "butter", "egg", "honey", "sausage", "wings"],
+        "pescatarian": ["chicken", "beef", "pork", "sausage", "wings"],
+        "lactose-intolerant": ["dairy", "milk", "cheese", "butter", "queso"],
+        "omnivore": [],  # Omnivores can eat anything
+        "keto": ["bread", "pasta", "rice", "potato", "sugar"],
+        "paleo": ["bread", "pasta", "rice", "legume", "dairy", "sugar"],
+        "nut-free": ["peanut", "almond", "cashew", "walnut", "pecan", "nut"],
+        "halal": ["pork", "bacon", "ham", "pepperoni"],
+        "kosher": ["pork", "shellfish"],
+        "low-carb": ["bread", "pasta", "rice", "potato"],
+        "low-fat": ["butter", "oil", "fatty", "fried"],
+        "gluten-free": ["bread", "pasta", "wheat", "barley", "rye"],
+        "organic": [],  # Assume organic is not restricted by ingredients but by quality
+        "FODMAP": ["garlic", "onion", "wheat", "legume", "dairy", "milk", "cheese", "butter", "apple", "honey"]
+    }
+
+    def contains_restricted_ingredient(item_title, dietary_preferences):
+        item_title_lower = item_title.lower()
+        for pref in dietary_preferences:
+            restricted = restricted_ingredients.get(pref, [])
+            if any(ingredient in item_title_lower for ingredient in restricted):
+                return True
+        return False
+
+    url = f'https://api.spoonacular.com/food/menuItems/search'
+    all_menu_items = []
+    offset = 0
+    number = 10  # The maximum number of items to fetch per request (adjust as needed)
+
+    params = {
+            'query': query,
+            'number': number,
+            'offset': offset,
+            'apiKey': api_key
+    }
+    response = requests.get(url, params=params)
+    response.raise_for_status()
+    data = response.json()
+    menu_items = data.get('menuItems', [])
+    
+    filtered_items = [item for item in menu_items if not contains_restricted_ingredient(item.get('title', ''), dietary_preferences)]
+    all_menu_items.extend(filtered_items)
+
+    return all_menu_items
+    # while True:
+    #     params = {
+    #         'query': query,
+    #         'number': number,
+    #         'offset': offset,
+    #         'apiKey': api_key
+    #     }
+
+    #     response = requests.get(url, params=params)
+    #     response.raise_for_status()
+    #     data = response.json()
+    #     menu_items = data.get('menuItems', [])
+
+    #     if not menu_items:
+    #         break  # No more items to fetch
+        
+    #     # Filter menu items based on dietary preferences
+    #     filtered_items = [item for item in menu_items if not contains_restricted_ingredient(item.get('title', ''), dietary_preferences)]
+    #     all_menu_items.extend(filtered_items)
+    #     offset += number  # Move to the next page
+
+    # return all_menu_items
 
 def search_restaurant_by_name(api_key, restaurant_name):
     url = f'https://api.spoonacular.com/food/menuItems/search'
