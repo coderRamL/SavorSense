@@ -12,6 +12,7 @@ from sqlalchemy.orm import sessionmaker
 from datetime import datetime, timedelta
 import requests
 import json
+import string
 from bs4 import BeautifulSoup
 
 nltk.download('punkt')
@@ -288,6 +289,57 @@ def get_restaurants_by_name():
     conn.close()
     return [result[0] for result in results]
 
+def get_user_cuisine_preferences(username):
+    conn = connect_db()
+    cur = conn.cursor()
+    query = sql.SQL("SELECT cuisine, cuisine_other FROM users WHERE username = %s")
+    cur.execute(query, (username,))
+    result = cur.fetchone()
+    cur.close()
+    conn.close()
+    
+    if result:
+        cuisine = [c.strip().lower() for c in result[0]] if result[0] else []
+        other_cuisine = [c.strip().lower() for c in result[1]] if result[1] else []
+        return cuisine + other_cuisine
+    return []
+
+def get_restaurants_from_db():
+    conn = connect_db()
+    cur = conn.cursor()
+    query = sql.SQL("SELECT name, cuisine FROM restaurants")
+    cur.execute(query)
+    results = cur.fetchall()
+    cur.close()
+    conn.close()
+    
+    return [{'name': row[0], 'cuisine': row[1]} for row in results]
+
+def sort_restaurants_by_preferences(restaurants, user_preferences):
+    def sort_key(restaurant):
+        restaurant_cuisines = [c.strip().lower() for c in restaurant['cuisine'].split(',')]
+        print(f"restaurant: {restaurant}")
+        for preference in user_preferences:
+            if preference in restaurant_cuisines:
+                return 0  # High priority if preference matches
+        return 1  # Lower priority if no match
+
+    sorted_restaurants = sorted(restaurants, key=sort_key)
+    print(f"sort: {sorted_restaurants}")
+    return sorted_restaurants
+
+print(f"srbp: {sort_restaurants_by_preferences(get_restaurants_from_db(), get_user_cuisine_preferences('jsmith23'))}")
+
+def get_restaurants_by_name_lower():
+    conn = connect_db()
+    cur = conn.cursor()
+    query = sql.SQL("SELECT name FROM restaurants")
+    cur.execute(query)
+    results = cur.fetchall()
+    cur.close()
+    conn.close()
+    return [result[0].lower() for result in results]
+
 def get_user_dietary_preferences(username):
     conn = connect_db()
     cur = conn.cursor()
@@ -303,56 +355,99 @@ def get_user_dietary_preferences(username):
         return dietary + other_dietary
     return []
 
-api_key = 'e7431a414289413c9de8c7ac0e548747'
+#api_key = 'e7431a414289413c9de8c7ac0e548747'
 #api_key = '6cb87a4a0c6a4723b373e210049a58e7'
+api_key = '24ec6bddabd744b5aa22ab0b99a8f6b6'
 
-def search_food_items(api_key, query, dietary_preferences):
+def search_food_items(api_key, query, dietary_preferences, restaurant_names):
     restricted_ingredients = {
-        "vegetarian": ["chicken", "beef", "pork", "fish", "seafood", "shrimp", "sausage", "wings"],
-        "vegan": ["chicken", "beef", "pork", "fish", "seafood", "shrimp", "dairy", "milk", "cheese", "butter", "egg", "honey", "sausage", "wings"],
-        "pescatarian": ["chicken", "beef", "pork", "sausage", "wings"],
-        "lactose-intolerant": ["dairy", "milk", "cheese", "butter", "queso"],
+       "vegetarian": ["chicken", "beef", "pork", "fish", "seafood", "shrimp", "sausage", "wing", "burger", "bacon", "tender"],
+        "vegan": ["chicken", "beef", "pork", "fish", "seafood", "shrimp", "dairy", "milk", "cheese", "butter", "egg", "honey", "sausage", "wing", "burger", "cheesecake", "bacon", "tender"],
+        "pescatarian": ["chicken", "beef", "pork", "sausage", "wing", "burger", "bacon", "tender"],
+        "lactose-intolerant": ["dairy", "milk", "cheese", "butter", "queso", "cheesecake"],
+        "lactose intolerant": ["dairy", "milk", "cheese", "butter", "queso", "cheesecake"],
         "omnivore": [],  # Omnivores can eat anything
         "keto": ["bread", "pasta", "rice", "potato", "sugar"],
         "paleo": ["bread", "pasta", "rice", "legume", "dairy", "sugar"],
         "nut-free": ["peanut", "almond", "cashew", "walnut", "pecan", "nut"],
+        "nut free": ["peanut", "almond", "cashew", "walnut", "pecan", "nut"],
         "halal": ["pork", "bacon", "ham", "pepperoni"],
         "kosher": ["pork", "shellfish"],
         "low-carb": ["bread", "pasta", "rice", "potato"],
+        "low carb": ["bread", "pasta", "rice", "potato"],
         "low-fat": ["butter", "oil", "fatty", "fried"],
+        "low fat": ["butter", "oil", "fatty", "fried"],
         "gluten-free": ["bread", "pasta", "wheat", "barley", "rye"],
+        "gluten free": ["bread", "pasta", "wheat", "barley", "rye"],
         "organic": [],  # Assume organic is not restricted by ingredients but by quality
-        "FODMAP": ["garlic", "onion", "wheat", "legume", "dairy", "milk", "cheese", "butter", "apple", "honey"]
+        "FODMAP": ["garlic", "onion", "wheat", "legume", "dairy", "milk", "cheese", "butter", "apple", "honey"],
+        "fodmap": ["garlic", "onion", "wheat", "legume", "dairy", "milk", "cheese", "butter", "apple", "honey"],
+        "Fodmap": ["garlic", "onion", "wheat", "legume", "dairy", "milk", "cheese", "butter", "apple", "honey"]
     }
+    def normalize_word(word):
+        # Remove trailing punctuation and convert to lowercase
+        word = word.rstrip(string.punctuation).lower()
+        # Remove trailing "s" to handle plural forms
+        if word.endswith("s"):
+            word = word[:-1]
+        # Normalize specific words to a common form
+        if word in ["hamburger", "cheeseburger"]:
+            return "burger"
+        return word
+    
+    def normalize_menu_item_title(title):
+        words = title.lower().split()
+        normalized_words = []
+        for word in words:
+            # Normalize words containing "burger"
+            if "burger" in word:
+                normalized_words.append("burger")
+            else:
+                normalized_words.append(normalize_word(word))
+        return normalized_words 
+    
 
-    def contains_restricted_ingredient(item_title, dietary_preferences):
-        item_title_lower = item_title.lower()
-        for pref in dietary_preferences:
-            restricted = restricted_ingredients.get(pref, [])
-            if any(ingredient in item_title_lower for ingredient in restricted):
-                return True
-        return False
+    def matches_dietary_restrictions(item_title, dietary_restrictions):
+        item_title_words = normalize_menu_item_title(item_title)
+        for restriction in dietary_restrictions:
+            for ingredient in restricted_ingredients.get(restriction, []):
+                print(f"Ing: {ingredient}")
+                print(f"item title: {item_title_words}")
+                if ingredient in item_title_words:
+                    return False
+        return True 
 
     url = f'https://api.spoonacular.com/food/menuItems/search'
     all_menu_items = []
     offset = 0
     number = 10  # The maximum number of items to fetch per request (adjust as needed)
-
-    if not query:
-        query = 'food'
+    names = [restaurant['name'].strip().lower() for restaurant in restaurant_names]
+    for name in names:
         
-    params = {
-            'query': query,
-            'number': number,
-            'apiKey': api_key
-    }
-    response = requests.get(url, params=params)
-    response.raise_for_status()
-    data = response.json()
-    menu_items = data.get('menuItems', [])
-    
-    filtered_items = [item for item in menu_items if not contains_restricted_ingredient(item.get('title', ''), dietary_preferences)]
-    all_menu_items.extend(filtered_items)
+        params = {
+                'query': name,
+                'number': number,
+                'apiKey': api_key
+        }
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        data = response.json()
+        menu_items = data.get('menuItems', [])
+        print(menu_items)
+        print(f"DP: {dietary_preferences}")
+        print(f"RN: {restaurant_names}")
+        for item in menu_items:
+            print(item.get('restaurantChain', '').lower())
+            if item.get('restaurantChain', '').lower() == name.lower():
+                print(f"{item.get('restaurantChain','').lower()}, {item.get('title', '')}")
+            if matches_dietary_restrictions(item.get('title', ''), dietary_preferences):
+                print(f"Item: {item.get('title', '')}, {dietary_preferences}") 
+        filtered_items = [item for item in menu_items if item.get('restaurantChain', '').lower() == name.lower() and 
+                        matches_dietary_restrictions(item.get('title', ''), dietary_preferences)]
+            
+        all_menu_items.extend(filtered_items)
+        if len(all_menu_items) >= 10:
+            return all_menu_items[:10]
 
     return all_menu_items
     # while True:
@@ -1172,9 +1267,11 @@ def generate_response(user_input, username):
             else:
                 return f"Sorry, I couldn't find any restaurants open at {time_12_hour}. Please be more specific."
 
+    rn = get_restaurants_from_db()
     if username != None:
         print("none123")
         dietary_preferences = get_user_dietary_preferences(username)
+        cuisine_preferences = get_user_cuisine_preferences(username)
     else:
         print('yes123')
         dietary_preferences = 'No'
@@ -1184,7 +1281,9 @@ def generate_response(user_input, username):
         if dietary_preferences == 'No':
             return 'You do not have any saved dietary preferences. Make sure to log in.'
         
-        menu_items = search_food_items(api_key, '', dietary_preferences)  # Empty query to fetch a variety of items
+        sorted_restaurants = sort_restaurants_by_preferences(rn, cuisine_preferences)
+        print(f"sr: {sorted_restaurants}")
+        menu_items = search_food_items(api_key, '', dietary_preferences, sorted_restaurants)  # Empty query to fetch a variety of items
         
         if menu_items:
             # Format the response with the restaurant name and food item title
@@ -1203,7 +1302,7 @@ def generate_response(user_input, username):
 
     # Restricted ingredients associated with dietary restrictions
     restricted_ingredients = {
-        "vegetarian": ["chicken", "beef", "pork", "fish", "seafood", "shrimp", "sausage", "wing", "burger"],
+        "vegetarian": ["chicken", "beef", "pork", "fish", "seafood", "shrimp", "sausage", "wing", "burger", "bacon"],
         "vegan": ["chicken", "beef", "pork", "fish", "seafood", "shrimp", "dairy", "milk", "cheese", "butter", "egg", "honey", "sausage", "wing", "burger", "cheesecake"],
         "pescatarian": ["chicken", "beef", "pork", "sausage", "wing", "Cheeseburger"],
         "lactose-intolerant": ["dairy", "milk", "cheese", "butter", "queso", "cheesecake"],
