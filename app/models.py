@@ -3,6 +3,8 @@ import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.probability import FreqDist
+from nltk.tag import pos_tag
+from nltk.chunk import ne_chunk
 import psycopg2
 import re
 from psycopg2 import sql
@@ -16,6 +18,9 @@ import string
 from bs4 import BeautifulSoup
 
 nltk.download('punkt')
+nltk.download('averaged_perceptron_tagger')
+nltk.download('maxent_ne_chunker')
+nltk.download('words')
 nltk.download('stopwords')
 
 food_recommendations = {
@@ -355,11 +360,33 @@ def get_user_dietary_preferences(username):
         return dietary + other_dietary
     return []
 
+def get_user_allergies(username):
+    conn = connect_db()
+    cur = conn.cursor()
+    query = sql.SQL("SELECT allergies FROM users WHERE username = %s")
+    cur.execute(query, (username,))
+    result = cur.fetchone()
+    cur.close()
+    conn.close() 
+    if result:
+       allergies = [item.lower() for item in result[0]] if result[0] else [] 
+       return allergies
+    return []
+
+def get_user_age(username):
+    conn = connect_db()
+    cur = conn.cursor()
+    query = sql.SQL("SELECT age FROM users WHERE username = %s")
+    cur.execute(query, (username,))
+    result = cur.fetchone()
+    cur.close()
+    conn.close()
+    return result[0] if result else None
 # api_key = 'e7431a414289413c9de8c7ac0e548747'
 # api_key = '6cb87a4a0c6a4723b373e210049a58e7'
 api_key = '24ec6bddabd744b5aa22ab0b99a8f6b6'
 
-def search_food_items(api_key, query, dietary_preferences, restaurant_names):
+def search_food_items(api_key, query, dietary_preferences, restaurant_names, allergies, age):
     restricted_ingredients = {
        "vegetarian": ["chicken", "beef", "pork", "fish", "seafood", "shrimp", "sausage", "wing", "burger", "bacon", "tender"],
         "vegan": ["chicken", "beef", "pork", "fish", "seafood", "shrimp", "dairy", "milk", "cheese", "butter", "egg", "honey", "sausage", "wing", "burger", "cheesecake", "bacon", "tender"],
@@ -407,7 +434,7 @@ def search_food_items(api_key, query, dietary_preferences, restaurant_names):
         return normalized_words 
     
 
-    def matches_dietary_restrictions(item_title, dietary_restrictions):
+    def matches_dietary_restrictions(item_title, dietary_restrictions, allergies, age):
         item_title_words = normalize_menu_item_title(item_title)
         for restriction in dietary_restrictions:
             for ingredient in restricted_ingredients.get(restriction, []):
@@ -415,6 +442,14 @@ def search_food_items(api_key, query, dietary_preferences, restaurant_names):
                 print(f"item title: {item_title_words}")
                 if ingredient in item_title_words:
                     return False
+        for allergy in allergies:
+            if allergy in item_title_words:
+                return False
+        if "sauce" in item_title_words or "dressing" in item_title_words or "root" in item_title_words:
+            return False
+        if int(age) < 21 and int(age) > 0:
+            if "sangria" in item_title_words or "vodka" in item_title_words or "modello" in item_title_words or "pacifico" in item_title_words or "beer" in item_title_words or "tecate" in item_title_words or "tequilla" in item_title_words or "heineken" in item_title_words or "lager" in item_title_words or "corona" in item_title_words or "bud" in item_title_words or "miller" in item_title_words or "budweiser" in item_title_words or "coor" in item_title_words or "blue moon" in item_title_words or "rum" in item_title_words or "margarita" in item_title_words or "mojito" in item_title_words or "martini" in item_title_words or "sake" in item_title_words or "wine" in item_title_words: 
+                return False
         return True 
 
     url = f'https://api.spoonacular.com/food/menuItems/search'
@@ -440,10 +475,10 @@ def search_food_items(api_key, query, dietary_preferences, restaurant_names):
             print(item.get('restaurantChain', '').lower())
             if item.get('restaurantChain', '').lower() == name.lower():
                 print(f"{item.get('restaurantChain','').lower()}, {item.get('title', '')}")
-            if matches_dietary_restrictions(item.get('title', ''), dietary_preferences):
+            if matches_dietary_restrictions(item.get('title', ''), dietary_preferences, allergies, age):
                 print(f"Item: {item.get('title', '')}, {dietary_preferences}") 
         filtered_items = [item for item in menu_items if item.get('restaurantChain', '').lower() == name.lower() and 
-                        matches_dietary_restrictions(item.get('title', ''), dietary_preferences)]
+                        matches_dietary_restrictions(item.get('title', ''), dietary_preferences, allergies, age)]
             
         all_menu_items.extend(filtered_items)
         if len(all_menu_items) >= 10:
@@ -670,11 +705,19 @@ def search_menu(item, menu_database):
 def preprocess_text(text):
     stop_words = set(stopwords.words('english'))
     # Remove 'under' and 'over' from the stop words list and other words
-    custom_stop_words = stop_words - {'under', 'over', 'below', 'above', 'than', 'more', 'less', 'a lot', 'not'}
+    # Convert text to lowercase
+    text = text.lower()
+    # Tokenize text
+    words = word_tokenize(text)
+    # Remove stop words
+    words = [word for word in words if word not in stop_words and word.isalnum()]
+    return words
 
-    word_tokens = word_tokenize(text)
-    filtered_text = [w.lower() for w in word_tokens if not w.lower() in custom_stop_words]
-    return filtered_text
+def extract_entities(text):
+    words = word_tokenize(text)
+    tagged_words = pos_tag(words)
+    entities = ne_chunk(tagged_words)
+    return entities
 
 # Train NLTK model using menu data
 def train_menu_model(menus):
@@ -734,6 +777,7 @@ def extract_days_from_input(input_text):
 # Generate a response based on user input
 def generate_response(user_input, username):
     processed_input = preprocess_text(user_input)
+    entities = extract_entities(user_input)
     if greeting(processed_input) != None:
         return greeting(processed_input)
     
@@ -748,9 +792,9 @@ def generate_response(user_input, username):
                 return f"Here are some {cuisine} restaurants you might like: {', '.join(restaurant_names)}"
             else:
                 return f"Sorry, I couldn't find any restaurants that match your preference. Is there anything else I can help you with?"           
-            
+       
     if 'rating' in processed_input or '' or 'ratings' in processed_input or 'how good' in user_input.lower() or 'stars' in processed_input  or 'star' in processed_input or 'rate' in processed_input or 'good' in processed_input or 'great' in processed_input or 'awesome' in processed_input or 'amazing' in processed_input or 'delicious' in processed_input or 'spectacular' in processed_input or 'satisfying' in processed_input or 'up to par' in user_input.lower() or 'bad' in processed_input or 'horrible' in processed_input or 'not up to par' in user_input.lower() or 'not good' in user_input.lower() or 'disgusting' in processed_input or 'dissatisfying' in processed_input  or 'best' in processed_input or 'worst' in processed_input:
-        if 'how good' in user_input.lower() or 'good' in processed_input or 'great' in processed_input or 'awesome' in processed_input or 'amazing' in processed_input or 'delicious' in processed_input or 'spectacular' in processed_input or 'satisfying' in processed_input or 'up to par' in user_input.lower() or 'best' in processed_input or 'highest' in processed_input or 'high' in processed_input:
+        if 'how good' in user_input.lower() or 'good' in processed_input or 'great' in processed_input or 'awesome' in processed_input or 'amazing' in processed_input or 'delicious' in processed_input or 'spectacular' in processed_input or 'satisfying' in processed_input or ('up to par' in user_input.lower() and 'not up to par' not in user_input.lower()) or 'best' in processed_input or 'highest' in processed_input or 'high' in processed_input:
             for word in processed_input:
                 try:
                     # rating = float(word)
@@ -1272,9 +1316,13 @@ def generate_response(user_input, username):
         print("none123")
         dietary_preferences = get_user_dietary_preferences(username)
         cuisine_preferences = get_user_cuisine_preferences(username)
+        allergies = get_user_allergies(username)
+        age = get_user_age(username)
     else:
         print('yes123')
         dietary_preferences = 'No'
+        allergies = []
+        age = 0
 
     if "dietary preferences" in user_input.lower() or "my preferences" in user_input.lower() or "my dietary preferences" in user_input.lower():
         # Fetch all food items matching the user's dietary preferences
@@ -1283,7 +1331,7 @@ def generate_response(user_input, username):
         
         sorted_restaurants = sort_restaurants_by_preferences(rn, cuisine_preferences)
         print(f"sr: {sorted_restaurants}")
-        menu_items = search_food_items(api_key, '', dietary_preferences, sorted_restaurants)  # Empty query to fetch a variety of items
+        menu_items = search_food_items(api_key, '', dietary_preferences, sorted_restaurants, allergies, age)  # Empty query to fetch a variety of items
         
         if menu_items:
             # Format the response with the restaurant name and food item title
@@ -1348,13 +1396,21 @@ def generate_response(user_input, username):
                 normalized_words.append(normalize_word(word))
         return normalized_words
 
-    def matches_dietary_restrictions(item_title, dietary_restrictions):
+    def matches_dietary_restrictions(item_title, dietary_restrictions, allergies, age):
         item_title_words = normalize_menu_item_title(item_title)
         for restriction in dietary_restrictions:
             for ingredient in restricted_ingredients.get(restriction, []):
                 if ingredient in item_title_words:
                     print(f"Item '{item_title}' contains restricted ingredient '{ingredient}' for restriction '{restriction}'")
                     return False
+        for allergy in allergies:
+            if allergy in item_title_words:
+                return False
+        if "sauce" in item_title_words or "dressing" in item_title_words or "root" in item_title_words:
+            return False
+        if int(age) < 21 and int(age) > 0:
+            if "sangria" in item_title_words or "vodka" in item_title_words or "modello" in item_title_words or "pacifico" in item_title_words or "beer" in item_title_words or "tecate" in item_title_words or "tequilla" in item_title_words or "heineken" in item_title_words or "lager" in item_title_words or "corona" in item_title_words or "bud" in item_title_words or "miller" in item_title_words or "budweiser" in item_title_words or "coor" in item_title_words or "blue moon" in item_title_words or "rum" in item_title_words or "margarita" in item_title_words or "mojito" in item_title_words or "martini" in item_title_words or "sake" in item_title_words or "wine" in item_title_words: 
+                return False
         return True
 
     if food_words:
@@ -1381,7 +1437,11 @@ def generate_response(user_input, username):
             # Check if item matches food words
             word_match = any(word in normalized_title_words for word in normalized_food_words)
             # Check if item matches dietary restrictions
-            dietary_match = matches_dietary_restrictions(item['title'], dietary_restrictions)
+            if username == None:
+                allergies = []
+                age = 0
+
+            dietary_match = matches_dietary_restrictions(item['title'], dietary_restrictions, allergies, age)
 
             if word_match and dietary_match:
                 matched_items.append(item)
