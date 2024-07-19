@@ -1463,7 +1463,7 @@ def generate_response(user_input, username):
                 response += f"{item['title']} at {item['restaurant']},\n"
             response = response.rstrip(',\n')  # Remove trailing comma and newline
         elif not matched_items:
-            if normalized_food_words[0] == "vegan":
+            if normalized_food_words[0] == "vegetarian" or normalized_food_words[0] == "vegan" or normalized_food_words[0] == "pescatarian" or normalized_food_words[0] == "lactose-intolerant" or normalized_food_words[0] == "lactose intolerant" or normalized_food_words[0] == "omnivore" or normalized_food_words[0] == "keto" or normalized_food_words[0] == "paleo" or normalized_food_words[0] == "nut-free" or normalized_food_words[0] == "nut free" or normalized_food_words[0] == "halal" or normalized_food_words[0] == "kosher" or normalized_food_words[0] == "low-carb" or normalized_food_words[0] == "low carb" or normalized_food_words[0] == "low-fat" or normalized_food_words[0] == "low fat" or normalized_food_words[0] == "gluten-free" or normalized_food_words[0] == "gluten free" or normalized_food_words[0] == "organic" or normalized_food_words[0] == "FODMAP" or normalized_food_words[0] == "fodmap" or normalized_food_words[0] == "Fodmap":
                 print(dietary_only_items)
                 response = "Here are some options matching your dietary restrictions:\n"
                 for item in dietary_only_items:
